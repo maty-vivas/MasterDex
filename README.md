@@ -1,24 +1,35 @@
 # MasterDex
 
-Pokédex web en español hecha con React y Vite, con una interfaz inspirada en Pokémon Blanco/Negro y sus secuelas.
+MasterDex es una Pokédex web interactiva en español para explorar Pokémon de la Pokédex Nacional y consultar sus datos en una ficha detallada. El proyecto combina información de PokéAPI con una interfaz inspirada en la presentación de las Pokédex vistas en las distintas generaciones de los juegos.
 
-## Desarrollo local
+## Introducción
 
-```powershell
-npm install
-npm run dev
-```
+La pantalla principal permite recorrer la lista nacional, buscar especies y aplicar filtros. Al abrir una ficha se puede consultar información de la especie, cambiar entre sus formas disponibles y explorar sus estadísticas, evoluciones y movimientos.
 
-Vite mostrará la dirección local para abrir en el navegador. Para generar la versión de producción, usa `npm run build`; para previsualizarla, `npm run preview`.
+MasterDex está construido con React y Vite. Los datos, sprites e ilustraciones se cargan desde [PokéAPI](https://pokeapi.co/) y sus recursos públicos, por lo que la aplicación necesita conexión a internet.
 
-La aplicación consulta [PokéAPI](https://pokeapi.co/) y carga sprites e ilustraciones desde sus recursos públicos, por lo que necesita conexión a internet.
+## Funcionalidades
 
-## Funciones
+### Lista Pokédex
+- Busca Pokémon por nombre o número nacional.
+- Ordena los registros por número nacional o alfabéticamente.
+- Filtra por región de origen, por tipo o por una combinación de ambos.
 
-- Búsqueda por nombre o número nacional.
-- Orden alfabético o por número.
-- Carga progresiva de 60 registros por tanda.
-- Filtro por tipo desde el encabezado.
-- Vista previa del Pokémon al pasar el cursor o navegar la lista con el teclado.
-- Fichas detalladas en rutas internas `/pokemon/:id`, con estadísticas y descripción en español.
-- Diseño adaptable a pantallas móviles y de escritorio.
+### Ficha del Pokémon
+
+- Consulta el número de la Pokédex Nacional, el nombre de la especie y sus tipos.
+- Cambia entre el sprite 2D y el sprite 3D disponible para esa forma.
+- Cambia de forma o variante desde pestañas con iconos de vista previa.
+- Lee la descripción en español más reciente disponible en los datos de PokéAPI.
+- Consulta habilidades normales y ocultas, además de altura y peso en metros y kilogramos.
+- Compara PS, Ataque, Defensa, Ataque Especial, Defensa Especial y Velocidad con barras e iconos identificables por color.
+- Explora la cadena evolutiva junto con los requisitos de evolución.
+- Revisa los movimientos aprendidos por nivel junto con su tipo elemental y su clase de movimiento: Físico, Especial o Estado.
+
+La disponibilidad de sprites e información de formas depende de los recursos publicados por PokéAPI.
+
+## Scripts
+
+- `npm run dev`: inicia el servidor de desarrollo.
+- `npm run build`: genera la versión de producción en `dist/`.
+- `npm run preview`: sirve localmente la versión generada.

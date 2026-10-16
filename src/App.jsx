@@ -2,6 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import physicalClassIcon from './assets/moves/move-class-physical.png';
 import specialClassIcon from './assets/moves/move-class-special.png';
 import statusClassIcon from './assets/moves/move-class-status.png';
+import hpStatIcon from './assets/stats/ps.svg';
+import attackStatIcon from './assets/stats/atk.svg';
+import defenseStatIcon from './assets/stats/def.svg';
+import specialAttackStatIcon from './assets/stats/sp-atk.svg';
+import specialDefenseStatIcon from './assets/stats/sp-def.svg';
+import speedStatIcon from './assets/stats/speed.svg';
 
 const API = 'https://pokeapi.co/api/v2';
 const SPRITES = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon';
@@ -23,6 +29,9 @@ const DEX_REGIONS = [
 
 function padId(id) { return String(id).padStart(3, '0'); }
 function typeLabel(type) { return TYPE_NAMES[type] || type.toUpperCase(); }
+function SparkleIcon({ className = '' }) {
+  return <svg className={`sparkle-icon ${className}`.trim()} viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.5 12.1 7.9 18.5 10l-6.4 2.1L10 18.5l-2.1-6.4L1.5 10l6.4-2.1L10 1.5Z" /><path d="m16.1 1 .8 2.1L19 4l-2.1.8-.8 2.1-.8-2.1L13.2 4l2.1-.9.8-2.1Z" /></svg>;
+}
 function readPokemonRoute() {
   const match = window.location.pathname.match(/^\/pokemon\/(\d+)\/?$/);
   return match ? Number(match[1]) : null;
@@ -92,21 +101,30 @@ function MoveClassIcon({ damageClass }) {
   return <img className="move-class-icon" src={images[damageClass]} alt={`Clase: ${label}`} title={label} draggable="false" />;
 }
 
-function latestPokemonIcon(pokemon) {
-  const generations = Object.entries(pokemon?.sprites?.versions || {})
-    .map(([name, games]) => ({ games, number: ROMAN_GENERATIONS[name.replace('generation-', '')] || 0 }))
-    .sort((a, b) => b.number - a.number);
-  return generations.map(({ games }) => games?.icons?.front_default).find(Boolean) || null;
+function latestPokemonIcon(pokemon, candidateIndex) {
+  const generationEight = pokemon?.sprites?.versions?.['generation-viii'];
+  const candidates = [
+    generationEight?.['sword-shield']?.icons?.front_default,
+    generationEight?.icons?.front_default,
+    pokemon?.sprites?.versions?.['generation-vii']?.icons?.front_default,
+    pokemon?.sprites?.versions?.['generation-vi']?.icons?.front_default,
+    pokemon?.sprites?.versions?.['generation-ix']?.['scarlet-violet']?.icons?.front_default,
+  ].filter(Boolean);
+  return candidateIndex === undefined ? candidates[0] || null : candidates[candidateIndex] || null;
 }
 
 function PokemonRow({ pokemon, detail, onPreview, onLoadPreview, onOpen }) {
-  const icon = latestPokemonIcon(detail);
-  const fallbackIcon = detail?.sprites?.front_default || `${SPRITES}/${pokemon.id}.png`;
+  const iconCandidates = [...new Set([0, 1, 2, 3, 4].map((index) => latestPokemonIcon(detail, index)).filter(Boolean))];
+  const iconSignature = iconCandidates.join('|');
+  const [iconState, setIconState] = useState({ signature:'', failedCount:0 });
+  const failedCount = iconState.signature === iconSignature ? iconState.failedCount : 0;
+  const iconFailed = failedCount >= iconCandidates.length;
+  const icon = iconCandidates[Math.min(failedCount, iconCandidates.length - 1)];
   return <article className="pokemon-row" tabIndex="0" role="button" aria-label={`Ver ficha de ${pokemon.name}`}
     onMouseEnter={() => { onPreview(pokemon); onLoadPreview(pokemon); }} onMouseLeave={() => onPreview(null)}
     onFocus={() => { onPreview(pokemon); onLoadPreview(pokemon); }} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) onPreview(null); }}
     onClick={onOpen} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen(); } }}>
-    <span className="row-sprite"><img loading="lazy" src={icon || fallbackIcon} alt="" onError={(event) => { event.currentTarget.style.visibility = 'hidden'; }} /></span>
+    <span className="row-sprite"><img loading="lazy" src={icon || undefined} alt="" style={iconFailed ? { visibility:'hidden' } : undefined} onError={() => setIconState({ signature:iconSignature, failedCount:Math.min(failedCount + 1, iconCandidates.length) })} /></span>
     <span className="row-number">{padId(pokemon.id)}</span>
     <span className="row-name">{pokemon.name}</span>
     <span className="row-types">{detail ? detail.types.map(({ type }) => <TypeBadge key={type.name} type={type.name} />) : <span className="type-loading">CARGANDO…</span>}</span>
@@ -216,19 +234,15 @@ function DexScreen({ pokemon, details, loading, error, query, filters, setFilter
 }
 
 const STAT_LABELS = { hp:'PS', attack:'ATAQUE', defense:'DEFENSA', 'special-attack':'AT. ESP.', 'special-defense':'DEF. ESP.', speed:'VELOCIDAD' };
+const STAT_ICONS = { hp:hpStatIcon, attack:attackStatIcon, defense:defenseStatIcon, 'special-attack':specialAttackStatIcon, 'special-defense':specialDefenseStatIcon, speed:speedStatIcon };
 function StatIcon({ stat }) {
-  const common = { viewBox: '0 0 24 24', 'aria-hidden': true, focusable: 'false' };
-  if (stat === 'hp') return <svg {...common}><path d="M12 21s-9-5.7-9-12.1C3 4.2 7.8 2.6 12 7c4.2-4.4 9-2.8 9 1.9C21 15.3 12 21 12 21Z" /></svg>;
-  if (stat === 'attack') return <svg {...common}><path d="m12 1.4 2.1 6 5.2-3.5-1.8 6 6.2.2-5.1 3.6 4.2 4.7-6.1-1-1.1 6.1-3.6-5.1-4 4.8.2-6.2-6.1 1.9 3.5-5.3-6-2.1 6-2.1-3.5-5.2 6 1.8L8.3.8l3.7 5.1Z" /></svg>;
-  if (stat === 'defense') return <svg {...common}><path d="M12 2 21 5.5v6.1c0 5.1-3.4 8.5-9 10.4-5.6-1.9-9-5.3-9-10.4V5.5L12 2Z"/><path d="m12 6 1.6 3.2 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6L6.8 9.7l3.6-.5L12 6Z" fill="#eaf2f6"/></svg>;
-  if (stat === 'special-attack') return <svg {...common}><path d="M2 12s3.4-7 10-7 10 7 10 7-3.4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="4.6" fill="#eaf2f6"/><circle cx="12" cy="12" r="2.5"/></svg>;
-  if (stat === 'special-defense') return <svg {...common}><path d="M12 2 21 5.5v6.1c0 5.1-3.4 8.5-9 10.4-5.6-1.9-9-5.3-9-10.4V5.5L12 2Z"/><ellipse cx="12" cy="12" rx="5.5" ry="3.5" fill="#eaf2f6"/><ellipse cx="12" cy="12" rx="3.6" ry="2.2"/><circle cx="12" cy="12" r="1.1" fill="#eaf2f6"/></svg>;
-  return <svg {...common}><path d="M2 5h18l-5 3H2l5-3Zm3 5h17l-5 3H5l5-3Zm-3 5h18l-5 3H2l5-3Z"/></svg>;
+  return <span className="stat-icon" style={{ '--stat-icon-mask': `url("${STAT_ICONS[stat]}")` }} aria-hidden="true" />;
 }
 
 const ROMAN_GENERATIONS = { i:1, ii:2, iii:3, iv:4, v:5, vi:6, vii:7, viii:8, ix:9 };
 
-function latestGenerationSprite(pokemon) {
+function latestGenerationSprite(pokemon, shiny = false) {
+  const spriteKey = shiny ? 'front_shiny' : 'front_default';
   const generations = Object.entries(pokemon?.sprites?.versions || {})
     .map(([name, games]) => ({ name, games, number: ROMAN_GENERATIONS[name.replace('generation-', '')] || 0 }))
     .filter(({ number }) => number >= 6 && number <= 8)
@@ -236,7 +250,7 @@ function latestGenerationSprite(pokemon) {
   const findFrontSprite = ({ name: generation, games }) => {
     const image = Object.entries(games || {})
       .filter(([key]) => key !== 'icons')
-      .map(([, game]) => game?.front_default)
+      .map(([, game]) => game?.[spriteKey])
       .find(Boolean);
     if (image) return { url: image, generation };
     return null;
@@ -246,40 +260,72 @@ function latestGenerationSprite(pokemon) {
     if (sprite) return sprite;
   }
 
-  // Recent forms may have no VI–VIII model. Use their Gen IX in-game sprite as a fallback.
   const generationNine = pokemon?.sprites?.versions?.['generation-ix'];
+  const legendsZaSprite = generationNine?.['legends-za']?.[spriteKey];
+  if (legendsZaSprite) return { url: legendsZaSprite, generation: 'generation-ix' };
+
+  const scarletVioletSprite = generationNine?.['scarlet-violet']?.[spriteKey];
+  if (scarletVioletSprite) return { url: scarletVioletSprite, generation: 'generation-ix' };
+
+  // Recent forms may have no VI–VIII or Scarlet/Violet model. Try other Gen IX games last.
   const fallback = findFrontSprite({ name: 'generation-ix', games: generationNine });
   if (fallback) return fallback;
 
   return null;
 }
 
-function pokemonImage(pokemon, mode) {
+function pokemonImage(pokemon, mode, shiny = false) {
   const sprites = pokemon?.sprites;
   if (!sprites) return '';
-  if (mode === '3d') return latestGenerationSprite(pokemon)?.url || '';
+  if (mode === '3d') return latestGenerationSprite(pokemon, shiny)?.url || '';
   const genFive = sprites.versions?.['generation-v']?.['black-white'];
+  if (shiny) return genFive?.front_shiny || sprites.front_shiny || '';
   if (genFive?.front_default) return genFive.front_default;
-  return sprites.front_default || latestGenerationSprite(pokemon)?.url || '';
+  return sprites.front_default || '';
 }
 
-function hasGenerationFiveSprite(pokemon) {
+function hasGenerationFiveSprite(pokemon, shiny = false) {
   const sprite = pokemon?.sprites?.versions?.['generation-v']?.['black-white'];
-  return Boolean(sprite?.front_default);
+  return Boolean(shiny ? sprite?.front_shiny : sprite?.front_default);
 }
 
-function latestSpriteGenerationLabel(pokemon) {
-  return latestGenerationSprite(pokemon)?.generation?.replace('generation-', '').toUpperCase() || '3D';
+function latestSpriteGenerationLabel(pokemon, shiny = false) {
+  return latestGenerationSprite(pokemon, shiny)?.generation?.replace('generation-', '').toUpperCase() || '3D';
 }
 
-function getLatestFlavorText(species) {
-  const entries = (species?.flavor_text_entries || []).filter((entry) => ['es', 'es-419'].includes(entry.language.name));
-  if (!entries.length) return 'Una especie registrada en la Pokédex nacional.';
+function getLatestFlavorText(species, languages) {
+  const entries = (species?.flavor_text_entries || []).filter((entry) => languages.includes(entry.language.name));
+  if (!entries.length) return null;
   const versionNumber = (entry) => Number(entry.version?.url?.match(/\/(\d+)\/?$/)?.[1] || 0);
   const latestVersion = Math.max(...entries.map(versionNumber));
   const latestEntries = entries.filter((entry) => versionNumber(entry) === latestVersion);
-  const chosen = latestEntries.find((entry) => entry.language.name === 'es') || latestEntries[0];
-  return chosen.flavor_text.replace(/[\n\f]/g, ' ');
+  const chosen = latestEntries.find((entry) => entry.language.name === languages[0]) || latestEntries[0];
+  return chosen.flavor_text.replace(/[\n\f]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function spanishFlavorText(species) {
+  const spanish = getLatestFlavorText(species, ['es', 'es-419']);
+  if (spanish) return { text: spanish, translated: false, loading: false };
+  const english = getLatestFlavorText(species, ['en']);
+  return english
+    ? { text: english, translated: false, loading: false, hasEnglishFallback: true, englishText: english }
+    : { text: 'Una especie registrada en la Pokédex nacional.', translated: false, loading: false };
+}
+
+async function translateFlavorText(text, signal) {
+  const cacheKey = `masterdex-flavor-es:${text}`;
+  let cached = null;
+  try { cached = localStorage.getItem(cacheKey); } catch { /* Storage may be disabled by the browser. */ }
+  if (cached) return cached;
+  const url = new URL('https://translate.googleapis.com/translate_a/single');
+  url.search = new URLSearchParams({ client: 'gtx', sl: 'en', tl: 'es', dt: 't', q: text }).toString();
+  const response = await fetch(url, { signal });
+  if (!response.ok) throw new Error('Translation service unavailable');
+  const result = await response.json();
+  const translated = (result[0] || []).map((part) => part[0]).filter(Boolean).join('').trim();
+  if (!translated) throw new Error('Empty translation');
+  try { localStorage.setItem(cacheKey, translated); } catch { /* Translation still works without persistent storage. */ }
+  return translated;
 }
 
 function latestLevelMoves(pokemon) {
@@ -346,8 +392,13 @@ function PokemonDetailPage({ pokemon, cachedDetail, loading, onBack, onOpen }) {
   const [moveDetails, setMoveDetails] = useState({});
   const [selectedForm, setSelectedForm] = useState(null);
   const [viewMode, setViewMode] = useState('2d');
+  const [isShiny, setIsShiny] = useState(false);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const [error, setError] = useState(false);
+  const [descriptionData, setDescriptionData] = useState({ text: 'Una especie registrada en la Pokédex nacional.', translated: false, loading: false });
+  const [descriptionTranslation, setDescriptionTranslation] = useState(null);
+  const [showOriginalDescription, setShowOriginalDescription] = useState(false);
+  const descriptionTranslationController = useRef(null);
 
   useEffect(() => {
     if (!pokemon) return undefined;
@@ -394,6 +445,29 @@ function PokemonDetailPage({ pokemon, cachedDetail, loading, onBack, onOpen }) {
   }, [pokemon, cachedDetail]);
 
   useEffect(() => {
+    descriptionTranslationController.current?.abort();
+    const source = spanishFlavorText(species);
+    setDescriptionData(source);
+    setDescriptionTranslation(null);
+    setShowOriginalDescription(false);
+    return () => descriptionTranslationController.current?.abort();
+  }, [species]);
+
+  const requestDescriptionTranslation = useCallback(async () => {
+    if (!descriptionData.hasEnglishFallback || descriptionTranslation?.loading) return;
+    const controller = new AbortController();
+    descriptionTranslationController.current = controller;
+    setDescriptionTranslation({ loading: true, text: '' });
+    try {
+      const text = await translateFlavorText(descriptionData.englishText, controller.signal);
+      if (controller.signal.aborted) return;
+      setDescriptionTranslation({ loading: false, text, error: false });
+    } catch {
+      if (!controller.signal.aborted) setDescriptionTranslation({ loading: false, text: '', error: true });
+    }
+  }, [descriptionData, descriptionTranslation]);
+
+  useEffect(() => {
     if (!detail) return undefined;
     const controller = new AbortController();
     const movesToLoad = latestLevelMoves(detail).filter((move) => !MOVE_INFO_CACHE.has(move.name));
@@ -422,11 +496,20 @@ function PokemonDetailPage({ pokemon, cachedDetail, loading, onBack, onOpen }) {
 
   const activeForm = forms.find((form) => form.pokemon.name === selectedForm) || forms.find((form) => form.is_default);
   const selectedData = activeForm?.data || detail;
-  const displayImage = pokemonImage(selectedData, viewMode) || (viewMode === '2d' ? pokemonImage(detail, '2d') : '');
+  const displayImage = pokemonImage(selectedData, viewMode, isShiny);
+  const visibleForms = species?.name === 'zygarde'
+    ? forms
+      .filter((form) => !form.pokemon.name.endsWith('-power-construct'))
+      .sort((a, b) => {
+        const order = (form) => form.is_default ? 0 : form.pokemon.name.includes('-10') ? 1 : form.pokemon.name.includes('complete') ? 2 : form.pokemon.name.includes('mega') ? 3 : 4;
+        return order(a) - order(b);
+      })
+    : forms;
   useEffect(() => setImageLoadFailed(false), [displayImage]);
+  useEffect(() => setIsShiny(false), [pokemon?.id, selectedForm]);
   const dexNumber = species?.pokedex_numbers?.find((entry) => entry.pokedex.name === 'national')?.entry_number || species?.id || pokemon?.id || 0;
   const moves = latestLevelMoves(detail);
-  const description = getLatestFlavorText(species);
+  const description = descriptionData;
   const selectedAbilities = selectedData?.abilities || detail?.abilities || [];
 
   return <>
@@ -438,10 +521,10 @@ function PokemonDetailPage({ pokemon, cachedDetail, loading, onBack, onOpen }) {
       {pokemon && !detail && !error && <div className="loading-state detail-loading"><span className="loader" /><span>CARGANDO FICHA…</span></div>}
       {error && <div className="error-state detail-error">NO SE PUDO CARGAR LA FICHA. INTÉNTALO DE NUEVO.</div>}
       {pokemon && detail && <>
-        {forms.length > 1 && <nav className="detail-form-selector" aria-label="Formas y variantes">
+        {visibleForms.length > 1 && <nav className="detail-form-selector" aria-label="Formas y variantes">
           <h2 className="detail-section-title">FORMAS Y VARIANTES</h2>
-          <div className="form-options" role="group" aria-label="Seleccionar forma del Pokémon">{forms.map((form) => {
-            const icon = latestPokemonIcon(form.data) || pokemonImage(form.data, '2d') || pokemonImage(form.data, '3d');
+          <div className="form-options" role="group" aria-label="Seleccionar forma del Pokémon">{visibleForms.map((form) => {
+            const icon = latestPokemonIcon(form.data) || pokemonImage(form.data, '2d') || latestGenerationSprite(form.data)?.url;
             return <button key={form.pokemon.name} className={`form-option${activeForm?.pokemon.name === form.pokemon.name ? ' selected' : ''}`} onClick={() => setSelectedForm(form.pokemon.name)} aria-pressed={activeForm?.pokemon.name === form.pokemon.name}>
               <img loading="lazy" src={icon} alt="" /><span>{formLabel(form, species?.name || pokemon.name)}</span>
             </button>;
@@ -455,9 +538,10 @@ function PokemonDetailPage({ pokemon, cachedDetail, loading, onBack, onOpen }) {
                 <button className={viewMode === '2d' ? 'selected' : ''} onClick={() => setViewMode('2d')}>2D</button>
                 <button className={viewMode === '3d' ? 'selected' : ''} onClick={() => setViewMode('3d')}>3D</button>
               </div>
-              {displayImage && !imageLoadFailed ? <img src={displayImage} alt={`${viewMode === '3d' ? 'Render 3D' : 'Sprite 2D'} de ${selectedData?.name || pokemon.name}`} onError={() => setImageLoadFailed(true)} /> : <span className="detail-image-missing">{viewMode === '3d' ? 'RENDER 3D NO DISPONIBLE' : 'SPRITE 2D NO DISPONIBLE'}</span>}
+              {displayImage && !imageLoadFailed ? <img src={displayImage} alt={`${isShiny ? 'Shiny · ' : ''}${viewMode === '3d' ? 'Render 3D' : 'Sprite 2D'} de ${selectedData?.name || pokemon.name}`} onError={() => setImageLoadFailed(true)} /> : <span className="detail-image-missing">{isShiny ? `SHINY ${viewMode === '3d' ? '3D' : '2D'} NO DISPONIBLE` : viewMode === '3d' ? 'RENDER 3D NO DISPONIBLE' : 'SPRITE 2D NO DISPONIBLE'}</span>}
               <span className="detail-art-number">N.º {padId(dexNumber)} / POKÉDEX NACIONAL</span>
-              <span className="detail-art-note">{viewMode === '3d' ? `SPRITE 3D · GENERACIÓN ${latestSpriteGenerationLabel(selectedData)}` : hasGenerationFiveSprite(selectedData) ? 'SPRITE POKÉMON BLANCO / NEGRO' : 'SPRITE 2D DISPONIBLE'}</span>
+              <button type="button" className={`shiny-toggle${isShiny ? ' is-active' : ''}`} aria-pressed={isShiny} onClick={() => setIsShiny((current) => !current)}><SparkleIcon /><span>SHINY</span></button>
+              {(viewMode === '3d' || (displayImage && !imageLoadFailed)) && <span className="detail-art-note">{viewMode === '3d' ? `SPRITE 3D${isShiny ? ' SHINY' : ''} · GENERACIÓN ${latestSpriteGenerationLabel(selectedData, isShiny)}` : `SPRITE 2D${isShiny ? ' SHINY' : ''} · ${hasGenerationFiveSprite(selectedData, isShiny) ? 'GENERACIÓN V' : 'DISPONIBLE'}`}</span>}
             </div>
             <section className="detail-info-panel abilities-panel"><h2 className="detail-section-title">HABILIDADES</h2><div className="ability-list">{selectedAbilities.map(({ ability, is_hidden }) => <div className={`ability-entry${is_hidden ? ' is-hidden' : ''}`} key={ability.name}><strong>{abilityNames[ability.name] || humanizeSlug(ability.name)}</strong><span>{is_hidden ? 'HABILIDAD OCULTA' : 'HABILIDAD'}</span></div>)}</div></section>
           </div>
@@ -467,7 +551,20 @@ function PokemonDetailPage({ pokemon, cachedDetail, loading, onBack, onOpen }) {
             {activeForm && !activeForm.is_default && <p className="detail-current-form">{formLabel(activeForm, species?.name || pokemon.name)}</p>}
             <div className="detail-types">{(selectedData?.types || detail.types).map(({ type }) => <TypeBadge key={type.name} type={type.name} />)}</div>
             <h2 className="detail-section-title">DESCRIPCIÓN</h2>
-            <p className="detail-description">{description}</p>
+            <p className="detail-description">{descriptionTranslation?.text && !showOriginalDescription ? descriptionTranslation.text : description.text}</p>
+            {description.hasEnglishFallback && <div className="description-translation-controls">
+              {descriptionTranslation?.text && !showOriginalDescription
+                ? <><span className="description-translation-note">TRADUCIDO DEL INGLÉS</span><button className="description-translation-toggle" onClick={() => setShowOriginalDescription(true)}>MOSTRAR ORIGINAL</button></>
+                : <><span className="description-translation-note">TEXTO ORIGINAL EN INGLÉS</span>{descriptionTranslation?.text
+                  ? <button className="description-translate-button" onClick={() => setShowOriginalDescription(false)}>
+                    <SparkleIcon className="description-translate-sparkle" />MOSTRAR TRADUCCIÓN
+                  </button>
+                  : <button className="description-translate-button" onClick={requestDescriptionTranslation} disabled={descriptionTranslation?.loading}>
+                <SparkleIcon className="description-translate-sparkle" />
+                {descriptionTranslation?.loading ? 'TRADUCIENDO…' : 'MOSTRAR TRADUCCIÓN'}
+              </button>}</>}
+              {descriptionTranslation?.error && <span className="description-translation-error" role="status">No se pudo traducir. Inténtalo de nuevo.</span>}
+            </div>}
             <div className="physical-facts"><div><span>ALTURA</span><strong>{(selectedData.height / 10).toFixed(1)} m</strong></div><div><span>PESO</span><strong>{(selectedData.weight / 10).toFixed(1)} kg</strong></div></div>
             <h2 className="detail-section-title stats-title">CARACTERÍSTICAS BASE</h2>
             <div className="detail-stats" role="table" aria-label="Características base">{Object.entries(STAT_LABELS).map(([key, label]) => {
