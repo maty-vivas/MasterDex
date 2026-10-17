@@ -115,11 +115,11 @@ La sincronización inicial recorre varios miles de recursos y puede tardar unos 
 | `npm run test:e2e` | Ejecuta la suite end-to-end de Playwright en Chromium. |
 | `npm run test:e2e:ui` | Abre el modo interactivo de Playwright. |
 
-Playwright está configurado en `playwright.config.js`; la suite en `tests/e2e/` cubre búsqueda por nombre y número, filtros por región/tipo y vistas de sprites 2D, 3D y Shiny. El servidor de pruebas usa puertos separados (`4173` para Vite y `3101` para la API) y activa el modo offline. Las respuestas de PokéAPI y los recursos gráficos se simulan para que los casos sean repetibles y no dependan de servicios externos ni de una base local poblada. No hay scripts de lint o formato.
+Playwright está configurado en `playwright.config.js`; la suite en `tests/e2e/` cubre búsqueda, filtros múltiples, orden ascendente/descendente, navegación, formas, datos de especie, traducciones, habilidades, fallbacks visuales, Shiny, errores/reintentos y uso móvil/teclado. El servidor de pruebas usa puertos separados (`4173` para Vite y `3101` para la API) y activa el modo offline. Las respuestas de PokéAPI y los recursos gráficos se simulan para que los casos sean repetibles y no dependan de servicios externos ni de una base local poblada. No hay scripts de lint o formato.
 
 ## Pruebas de navegador
 
-La configuración inicial apunta a Chromium de escritorio y levanta una instancia aislada del servidor de desarrollo. Si el puerto `4173` ya está ocupado, detén el proceso que lo usa antes de ejecutar las pruebas. Los resultados, capturas e informes se guardan en directorios ignorados por Git (`test-results/` y `playwright-report/`). `npm run test:e2e` ejecuta actualmente 9 casos.
+La configuración inicial apunta a Chromium de escritorio y levanta una instancia aislada del servidor de desarrollo. Si el puerto `4173` ya está ocupado, detén el proceso que lo usa antes de ejecutar las pruebas. Los resultados, capturas e informes se guardan en directorios ignorados por Git (`test-results/` y `playwright-report/`). `npm run test:e2e` ejecuta actualmente 22 casos.
 
 Para agregar un caso, crea un archivo `*.spec.js` dentro de `tests/e2e/`. Usa `page.route()` para simular la API local y mantener cada prueba reproducible y sin llamadas a servicios externos.
 

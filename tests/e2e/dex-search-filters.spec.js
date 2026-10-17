@@ -15,7 +15,7 @@ test('busca un Pokémon por nombre', async ({ page }) => {
 });
 
 test('busca un Pokémon por número nacional', async ({ page }) => {
-  await page.getByPlaceholder('Buscar Pokémon…').fill('025');
+  await page.getByPlaceholder('Buscar Pokémon…').fill('0025');
 
   await expect(page.getByRole('button', { name: 'Ver ficha de pikachu' })).toBeVisible();
   await expect(page.locator('.pokemon-row')).toHaveCount(1);

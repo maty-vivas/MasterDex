@@ -12,7 +12,7 @@ Este documento resume el estado comprobable del repositorio y las reglas para co
 
 ## 2. Estado actual del proyecto
 
-El repositorio contiene un frontend React/Vite y un backend Node pequeño que sirve la aplicación y expone una API local respaldada por SQLite. El backend conserva respuestas de PokéAPI en `data/masterdex.sqlite` y puede sincronizar de antemano los recursos usados por la interfaz. No hay autenticación ni perfiles de usuario. Playwright está configurado para Chromium y contiene 9 pruebas E2E iniciales de búsqueda, filtros y recursos visuales. No se encontró un proveedor de despliegue configurado.
+El repositorio contiene un frontend React/Vite y un backend Node pequeño que sirve la aplicación y expone una API local respaldada por SQLite. El backend conserva respuestas de PokéAPI en `data/masterdex.sqlite` y puede sincronizar de antemano los recursos usados por la interfaz. No hay autenticación ni perfiles de usuario. Playwright está configurado para Chromium y contiene 22 pruebas E2E para búsqueda, filtros, orden, ficha y navegación. No se encontró un proveedor de despliegue configurado.
 
 ### Implementado en el código
 
@@ -88,6 +88,9 @@ Los detalles consultados por React se mantienen también en memoria durante la s
 - `scripts/sync-pokeapi.js`: recorre catálogos, Pokémon/formas, especies, habilidades, movimientos, cadenas evolutivas y tipos para llenar/actualizar SQLite.
 - `playwright.config.js`: configura Chromium, el servidor aislado de E2E en Vite `4173` y backend `3101`, modo offline, trazas/capturas ante fallos y descubrimiento en `tests/e2e/`.
 - `tests/e2e/dex-search-filters.spec.js`: búsqueda por nombre/número y filtros por región, tipo y combinación.
+- `tests/e2e/dex-controls.spec.js`: orden ascendente/descendente, filtros múltiples/limpieza, cierre de menús y uso móvil/teclado.
+- `tests/e2e/pokemon-detail-data.spec.js`: datos de especie, formas, traducción de descripciones y habilidades, evoluciones y navegación.
+- `tests/e2e/resilience.spec.js`: error temporal de carga y reintento.
 - `tests/e2e/pokemon-sprites.spec.js`: sprites normales 2D/3D y activación/restauración de Shiny en ambos modos.
 - `tests/e2e/helpers/pokeapi-mocks.js`: fixtures con IDs nacionales y respuestas API/imágenes simuladas para no depender de red o SQLite poblada.
 - `data/masterdex.sqlite`: base local generada y excluida de Git; ruta configurable con `MASTERDEX_DB_PATH`.
@@ -108,7 +111,7 @@ Los detalles consultados por React se mantienen también en memoria durante la s
 - `dist/`: salida generada de Vite, ignorada por Git; no editarla manualmente.
 - `data/`: datos SQLite persistentes generados localmente; no commitear el archivo de base ni sus WAL.
 
-No se encontró carpeta `docs/`. La suite Playwright vive en `tests/e2e/` y actualmente tiene 9 pruebas iniciales.
+No se encontró carpeta `docs/`. La suite Playwright vive en `tests/e2e/` y actualmente tiene 22 pruebas.
 
 ## 6. Funcionalidades
 
@@ -187,7 +190,7 @@ Scripts comprobados en `package.json`:
 - `npm run test:e2e`: ejecuta Playwright sobre la suite ubicada en `tests/e2e/`.
 - `npm run test:e2e:ui`: abre el modo interactivo de Playwright.
 
-El servidor E2E se inicia en puertos dedicados (`4173` frontend, `3101` backend) y `MASTERDEX_OFFLINE=true`; los casos interceptan `/api/pokeapi/v2/**` y recursos de imagen con fixtures para no depender de la base local ni de servicios externos. Actualmente hay 9 pruebas iniciales y se ejecutan con `npm run test:e2e`. No hay comandos de lint o formato. Un despliegue necesita Node y disco persistente para SQLite. Para no depender de PokéAPI en runtime, sincronizar la base y activar `MASTERDEX_OFFLINE=true`; en contenedores públicos configurar `MASTERDEX_HOST=0.0.0.0`. `npm run start` sirve `index.html` como fallback para `/pokemon/{id}`.
+El servidor E2E se inicia en puertos dedicados (`4173` frontend, `3101` backend) y `MASTERDEX_OFFLINE=true`; los casos interceptan `/api/pokeapi/v2/**` y recursos de imagen con fixtures para no depender de la base local ni de servicios externos. Actualmente hay 22 pruebas y se ejecutan con `npm run test:e2e`. No hay comandos de lint o formato. Un despliegue necesita Node y disco persistente para SQLite. Para no depender de PokéAPI en runtime, sincronizar la base y activar `MASTERDEX_OFFLINE=true`; en contenedores públicos configurar `MASTERDEX_HOST=0.0.0.0`. `npm run start` sirve `index.html` como fallback para `/pokemon/{id}`.
 
 ## 10. Convenciones de desarrollo
 
@@ -229,7 +232,7 @@ El servidor E2E se inicia en puertos dedicados (`4173` frontend, `3101` backend)
 - Las etiquetas regionales son rangos simplificados y no consideran subdexes, variantes regionales ni procedencia compleja.
 - La selección del grupo de movimientos se basa en el número máximo de `version_group` disponible por movimiento; puede no representar un único juego elegido por el usuario.
 - La traducción Google no tiene garantía de disponibilidad, calidad, SLA ni clave formal; usa almacenamiento local del navegador.
-- Playwright cubre los flujos iniciales principales, pero no toda la ficha: faltan casos para pestañas de formas, traducción, navegación de historial, recursos ausentes y vista móvil. No se encontraron linter ni formatter. La DB inicial comprimida ocupa aproximadamente 18 MB; el archivo se excluye de Git y un despliegue necesita persistencia y copias de seguridad.
+- Playwright ya cubre búsqueda, filtros múltiples, orden y menú, navegación de ficha, datos de especie, traducciones, formas, algunos recursos ausentes, error/reintento y uso móvil. Aún no cubre visualmente la matriz completa de sprites ni los límites de color de cada estadística, y la suite no prueba sincronización/lectura real de SQLite. No se encontraron linter ni formatter. La DB inicial comprimida ocupa aproximadamente 18 MB; el archivo se excluye de Git y un despliegue necesita persistencia y copias de seguridad.
 - `src/screens/PokemonDetailPage.jsx` todavía combina carga de datos y presentación de la ficha en un módulo amplio; separar esa lógica en un hook podría mejorar su mantenimiento. `styles.css` también acumula reglas antiguas y overrides compactos.
 - Los rangos `latest` de `package.json` pueden actualizar dependencias al regenerar el lockfile; conservar y revisar `package-lock.json`.
 - `node:sqlite` todavía puede emitir `ExperimentalWarning` según la versión de Node. El código requiere Node `>=22.13.0`, donde existe `StatementSync.iterate()` sin flag experimental.
@@ -252,7 +255,7 @@ No se encontró un error general reproducible durante esta inspección. La lista
 
 ### Mejoras posibles, aún no aprobadas como requisitos
 
-1. Ampliar Playwright gradualmente para cubrir formas, navegación atrás/adelante, fallback de recursos ausentes, traducción y viewport móvil; conservar los mocks para que las pruebas no dependan de servicios externos.
+1. Ampliar Playwright para cubrir las prioridades restantes: casos de borde de colores de estadísticas, prioridad detallada de iconos y sprites, y comprobaciones de integración para la caché SQLite; conservar mocks en E2E para no depender de servicios externos.
 2. Considerar configurar una versión Node en `engines` y rangos de dependencia reproducibles en vez de `latest`.
 3. Considerar separar la carga de datos de `PokemonDetailPage.jsx` en un hook si la ficha sigue creciendo; mantener esa extracción como refactor independiente de cambios de comportamiento.
 4. Ordenar/limpiar `styles.css` después de comprobar cada selector en uso y conservar los estilos responsive actuales.
@@ -299,8 +302,10 @@ No ejecutar estas mejoras como si fueran decisiones ya tomadas; confirmar alcanc
 
 
 - Se instaló `@playwright/test` 1.64.1 y Chromium. `playwright.config.js` ejecuta Chromium con un servidor Vite/backend aislado en los puertos 4173/3101 y modo offline. `scripts/run-app.js` reenvía argumentos de CLI a Vite. Se agregaron los scripts `test:e2e` y `test:e2e:ui`; `test-results/` y `playwright-report/` se ignoran.
-- Se añadieron 9 pruebas E2E en `tests/e2e/`: búsqueda por nombre y número; filtros por región, tipo y combinación; sprite 2D, sprite 3D, Shiny 2D con vuelta a normal y Shiny 3D. `helpers/pokeapi-mocks.js` simula catálogo, especies, recursos e imágenes, sin consultas externas. `npm run test:e2e` pasó: 9/9 en Chromium.
-- Se implementó la descripción de cada habilidad en `src/screens/PokemonDetailPage.jsx`, con extracción en `src/utils/pokemon.js`. Una discrepancia entre el campo producido (`text`) y el leído por la vista (`description`) hacía que todas aparecieran como no disponibles; la ficha ahora lee `abilityInfo.text`. El panel inline se reemplazó por un popover anclado a la habilidad, con cierre por clic fuera y Escape. Su aspecto incluye encabezado “Descripción”, icono informativo SVG local (`src/assets/ability-info.svg`), borde turquesa en la habilidad activa y una capa superior para no quedar detrás de las secciones siguientes. Si el texto solo existe en inglés, el usuario puede solicitar su traducción, alternar entre versión traducida y original, y reutilizar el resultado cacheado mediante `translateTextToSpanish`. Pendiente añadir un caso E2E para abrir/cerrar y comprobar la descripción y el flujo de traducción.
+- Se añadieron pruebas E2E para el menú de orden ascendente/descendente, semántica OR y limpieza de filtros, cierre de menús, responsive móvil y teclado; datos de grupos huevo/hábitat, estadísticas y movimientos; formas Gigamax y deduplicación de Zygarde; sprites ausentes; traducción de descripciones y habilidades con caché; navegación de evoluciones e historial; y reintento tras fallo de carga. Los fixtures simulan también una falla temporal de catálogo. `npm run test:e2e` pasó: 22/22 en Chromium.
+- Se verificó manualmente el modo offline en un puerto temporal: la salud indicó `offlineMode: true` y 4.084 recursos; catálogo y Bulbasaur respondieron desde SQLite, y un recurso ausente devolvió 503 sin consultar PokéAPI. El proceso temporal se cerró y no se modificó la configuración normal.
+- La prueba de reintento falla dos solicitudes iniciales del catálogo porque React Strict Mode ejecuta el efecto dos veces en desarrollo; el tercer intento corresponde al botón de reintento explícito y carga correctamente.
+- La descripción de habilidades usa un popover accesible y tiene cobertura E2E de descripción inglesa, traducción, vuelta al original, caché y cierre con Escape. Los grupos huevo/hábitat aparecen como metadatos en texto español y también se cubren con fixtures.
 - Se ajustó `styles.css` para que en móvil el filtro de tipos use tres columnas como el de regiones, manteniendo el diseño de dos columnas en escritorio.
 - Las filas de lista recibieron un panel carbón medio detrás del icono y una franja cian paralela al borde inclinado del panel; sus anchos y tamaños de icono se adaptan a breakpoints de escritorio, tablet y móvil sin cambiar el fallback compartido.
 - `README.md` y esta guía se actualizaron con comandos, cobertura actual y próximos casos deseables. `npm run build`, comprobación sintáctica de la configuración y `git diff --check` pasaron; los avisos de líneas CRLF son del checkout Windows.
