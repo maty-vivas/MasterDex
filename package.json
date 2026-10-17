@@ -3,16 +3,25 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/run-app.js dev",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "node scripts/run-app.js preview",
+    "start": "node server/index.js",
+    "sync:pokeapi": "node scripts/sync-pokeapi.js",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "vite": "latest"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
 }
