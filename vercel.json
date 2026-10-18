@@ -3,8 +3,8 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "^/api/pokeapi/v2/(.*)$",
-      "destination": "/api/pokeapi/v2?__resourcePath=$1"
+      "source": "/api/pokeapi/v2/:path*",
+      "destination": "/api/pokeapi/v2?__resourcePath=:path*"
     },
     {
       "source": "/pokemon/:path*",
