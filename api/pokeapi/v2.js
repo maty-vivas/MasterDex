@@ -37,7 +37,8 @@ export default async function handler(request, response) {
     }
 
     const localPath = requestedPath.startsWith('/') ? requestedPath : `/${requestedPath}`;
-    const resourcePath = normalizeResourcePath(`${POKEAPI_BASE}${localPath}${incomingUrl.search}`);
+    const canonicalPath = localPath.endsWith('/') ? localPath : `${localPath}/`;
+    const resourcePath = normalizeResourcePath(`${POKEAPI_BASE}${canonicalPath}${incomingUrl.search}`);
     const wasCached = Boolean(await readTursoCachedResource(resourcePath));
     const payload = await getPokeApiResource(resourcePath);
 

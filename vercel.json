@@ -3,6 +3,10 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api/pokeapi/v2/:path*/",
+      "destination": "/api/pokeapi/v2?__resourcePath=:path*"
+    },
+    {
       "source": "/api/pokeapi/v2/:path*",
       "destination": "/api/pokeapi/v2?__resourcePath=:path*"
     },
