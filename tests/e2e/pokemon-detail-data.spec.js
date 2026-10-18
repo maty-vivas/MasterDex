@@ -33,11 +33,11 @@ test('cambia a Gigamax y respeta recursos 2D y Shiny ausentes', async ({ page })
   await expect(page.locator('.detail-current-form')).toHaveText('Gigamax');
   await expect(page.locator('.detail-image-missing')).toHaveText('SPRITE 2D NO DISPONIBLE');
 
-  await page.getByRole('button', { name: '3D', exact: true }).click();
+  await page.getByRole('button', { name: 'Alternar vista 2D/3D' }).click();
   await expect(page.locator('.detail-page-art img')).toHaveAttribute('src', '/fixtures/pikachu-gmax-normal-3d.svg');
   await page.getByRole('button', { name: 'SHINY' }).click();
   await expect(page.locator('.detail-image-missing')).toHaveText('SHINY 3D NO DISPONIBLE');
-  await page.getByRole('button', { name: '2D', exact: true }).click();
+  await page.getByRole('button', { name: 'Alternar vista 2D/3D' }).click();
   await expect(page.locator('.detail-image-missing')).toHaveText('SHINY 2D NO DISPONIBLE');
 });
 

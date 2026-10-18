@@ -6,11 +6,12 @@ import SparkleIcon from '../components/SparkleIcon.jsx';
 import TypeBadge from '../components/TypeBadge.jsx';
 import EvolutionBranch from '../components/EvolutionBranch.jsx';
 import StatIcon from '../components/StatIcon.jsx';
+import TypeEffectiveness from '../components/TypeEffectiveness.jsx';
 import abilityInfoIcon from '../assets/ability-info.svg';
 import { abilityDescription, eggGroupLabel, formLabel, habitatLabel, hasGenerationFiveSprite, humanizeSlug, latestGenerationSprite, latestLevelMoves, latestPokemonIcon, latestSpriteGenerationLabel, padId, pokemonImage, spanishFlavorText, translateTextToSpanish } from '../utils/pokemon.js';
 
 /** Ficha de especie: coordina sus datos remotos y presenta formas, arte y estadísticas. */
-export default function PokemonDetailPage({ pokemon, cachedDetail, loading, onBack, onOpen }) {
+export default function PokemonDetailPage({ pokemon, cachedDetail, loading, viewMode, setViewMode, onBack, onOpen }) {
   // Datos de PokéAPI que alimentan secciones distintas de la ficha.
   const [detail, setDetail] = useState(cachedDetail || null);
   const [species, setSpecies] = useState(null);
@@ -20,12 +21,11 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, onBa
   const [abilityTranslations, setAbilityTranslations] = useState({});
   const [moveDetails, setMoveDetails] = useState({});
 
-  // Estado de presentación que pertenece solo a esta ficha: forma, modo y variante Shiny.
+  // La forma y la variante Shiny son locales; el modo 2D/3D se conserva en el estado global.
   const [selectedForm, setSelectedForm] = useState(null);
   const [expandedAbility, setExpandedAbility] = useState(null);
-  const [viewMode, setViewMode] = useState('2d');
   const [isShiny, setIsShiny] = useState(false);
-  const [imageLoadFailed, setImageLoadFailed] = useState(false);
+  const [imageLoad, setImageLoad] = useState({ src: '', status: 'idle' });
   const [error, setError] = useState(false);
   const [descriptionData, setDescriptionData] = useState({ text: 'Una especie registrada en la Pokédex nacional.', translated: false, loading: false });
   const [descriptionTranslation, setDescriptionTranslation] = useState(null);
@@ -58,7 +58,7 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, onBa
     const controller = new AbortController();
     abilityTranslationControllers.current.forEach((translationController) => translationController.abort());
     abilityTranslationControllers.current.clear();
-    setDetail(cachedDetail || null); setSpecies(null); setEvolution(null); setForms([]); setAbilityDetails({}); setAbilityTranslations({}); setMoveDetails({}); setSelectedForm(null); setExpandedAbility(null); setImageLoadFailed(false); setError(false);
+    setDetail(cachedDetail || null); setSpecies(null); setEvolution(null); setForms([]); setAbilityDetails({}); setAbilityTranslations({}); setMoveDetails({}); setSelectedForm(null); setExpandedAbility(null); setError(false);
     const getDetail = cachedDetail ? Promise.resolve(cachedDetail) : fetch(pokemon.url, { signal: controller.signal }).then((response) => { if (!response.ok) throw new Error(); return response.json(); });
     getDetail.then(async (data) => {
       setDetail(data);
@@ -180,6 +180,8 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, onBa
   const activeForm = forms.find((form) => form.pokemon.name === selectedForm) || forms.find((form) => form.is_default);
   const selectedData = activeForm?.data || detail;
   const displayImage = pokemonImage(selectedData, viewMode, isShiny);
+  const imageLoadStatus = imageLoad.src === displayImage ? imageLoad.status : displayImage ? 'loading' : 'missing';
+  const imageLoadFailed = imageLoadStatus === 'error';
   // Zygarde trae variantes redundantes de Power Construct; se ocultan y ordenan solo en la pestaña.
   const visibleForms = species?.name === 'zygarde'
     ? forms
@@ -189,7 +191,6 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, onBa
         return order(a) - order(b);
       })
     : forms;
-  useEffect(() => setImageLoadFailed(false), [displayImage]);
   useEffect(() => setIsShiny(false), [pokemon?.id, selectedForm]);
   const dexNumber = species?.pokedex_numbers?.find((entry) => entry.pokedex.name === 'national')?.entry_number || species?.id || pokemon?.id || 0;
   const moves = latestLevelMoves(detail);
@@ -199,7 +200,7 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, onBa
   return <>
     <header className="topbar detail-topbar"><Brand onHome={onBack} /></header>
     <main className="detail-screen">
-      <button className="back-button" onClick={onBack}><span aria-hidden="true">←</span> VOLVER A LA POKÉDEX</button>
+      <button type="button" className="back-button" onClick={onBack}><span aria-hidden="true">←</span> VOLVER A LA POKÉDEX</button>
       {loading && !pokemon && <div className="loading-state detail-loading"><span className="loader" /><span>CARGANDO POKÉDEX…</span></div>}
       {!loading && !pokemon && <div className="error-state detail-error">NO SE ENCONTRÓ ESA ESPECIE.</div>}
       {pokemon && !detail && !error && <div className="loading-state detail-loading"><span className="loader" /><span>CARGANDO FICHA…</span></div>}
@@ -220,11 +221,14 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, onBa
           <div className="detail-visual-column">
             <div className={`detail-page-art${viewMode === '2d' ? ' is-pixel-art' : ' is-3d-sprite'}`}>
               <span className="detail-art-grid" />
-              <div className="detail-view-toggle" role="group" aria-label="Vista de imagen">
-                <button className={viewMode === '2d' ? 'selected' : ''} onClick={() => setViewMode('2d')}>2D</button>
-                <button className={viewMode === '3d' ? 'selected' : ''} onClick={() => setViewMode('3d')}>3D</button>
-              </div>
-              {displayImage && !imageLoadFailed ? <img src={displayImage} alt={`${isShiny ? 'Shiny · ' : ''}${viewMode === '3d' ? 'Render 3D' : 'Sprite 2D'} de ${selectedData?.name || pokemon.name}`} onError={() => setImageLoadFailed(true)} /> : <span className="detail-image-missing">{isShiny ? `SHINY ${viewMode === '3d' ? '3D' : '2D'} NO DISPONIBLE` : viewMode === '3d' ? 'RENDER 3D NO DISPONIBLE' : 'SPRITE 2D NO DISPONIBLE'}</span>}
+              <button type="button" className="detail-view-toggle" data-mode={viewMode} aria-label="Alternar vista 2D/3D" aria-pressed={viewMode === '3d'} onClick={() => setViewMode((current) => current === '2d' ? '3d' : '2d')}>
+                <span className={viewMode === '2d' ? 'is-active' : ''}>2D</span>
+                <span className={viewMode === '3d' ? 'is-active' : ''}>3D</span>
+              </button>
+              {displayImage && !imageLoadFailed ? <>
+                <img key={displayImage} className={`detail-sprite${imageLoadStatus === 'loaded' ? ' is-loaded' : ''}`} src={displayImage} alt={`${isShiny ? 'Shiny · ' : ''}${viewMode === '3d' ? 'Render 3D' : 'Sprite 2D'} de ${selectedData?.name || pokemon.name}`} onLoad={() => setImageLoad({ src: displayImage, status: 'loaded' })} onError={() => setImageLoad({ src: displayImage, status: 'error' })} />
+                {imageLoadStatus === 'loading' && <span className="visual-resource-loader" role="status"><i className="loading-pokeball" aria-hidden="true" />CARGANDO {viewMode === '3d' ? 'SPRITE 3D' : 'SPRITE 2D'}…</span>}
+              </> : <span className="detail-image-missing">{isShiny ? `SHINY ${viewMode === '3d' ? '3D' : '2D'} NO DISPONIBLE` : viewMode === '3d' ? 'RENDER 3D NO DISPONIBLE' : 'SPRITE 2D NO DISPONIBLE'}</span>}
               <span className="detail-art-number">N.º {padId(dexNumber)} / POKÉDEX NACIONAL</span>
               <button type="button" className={`shiny-toggle${isShiny ? ' is-active' : ''}`} aria-pressed={isShiny} onClick={() => setIsShiny((current) => !current)}><SparkleIcon /><span>SHINY</span></button>
               {(viewMode === '3d' || (displayImage && !imageLoadFailed)) && <span className="detail-art-note">{viewMode === '3d' ? `SPRITE 3D${isShiny ? ' SHINY' : ''} · GENERACIÓN ${latestSpriteGenerationLabel(selectedData, isShiny)}` : `SPRITE 2D${isShiny ? ' SHINY' : ''} · ${hasGenerationFiveSprite(selectedData, isShiny) ? 'GENERACIÓN V' : 'DISPONIBLE'}`}</span>}
@@ -297,13 +301,14 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, onBa
         </section>
         {/* Bloques complementarios que se mantienen bajo el panel principal en escritorio y móvil. */}
         <div className="detail-sections-grid">
-          <div className="detail-column">
-            <section className="detail-info-panel"><h2 className="detail-section-title">CADENA EVOLUTIVA</h2>{evolution ? <div className="evolution-chain-scroll"><EvolutionBranch node={evolution} selectedId={species?.id || pokemon.id} onOpen={onOpen} /></div> : <p className="detail-muted">Sin datos evolutivos disponibles.</p>}</section>
-          </div>
-          <section className="detail-info-panel moves-panel"><div className="moves-heading"><h2 className="detail-section-title">MOVIMIENTOS POR NIVEL</h2><span>{moves.length} MOV.</span></div>{moves.length ? <div className="level-moves"><table className="move-table"><thead><tr><th>NIVEL</th><th>MOVIMIENTO</th><th>TIPO</th><th>CLASE</th></tr></thead><tbody>{moves.map((move) => {
+          <section className="detail-info-panel"><h2 className="detail-section-title">CADENA EVOLUTIVA</h2>{evolution ? <div className="evolution-chain-scroll"><EvolutionBranch node={evolution} selectedId={species?.id || pokemon.id} onOpen={onOpen} /></div> : <p className="detail-muted">Sin datos evolutivos disponibles.</p>}</section>
+          <div className="detail-analysis-grid">
+            <TypeEffectiveness types={selectedData?.types || detail.types} />
+            <section className="detail-info-panel moves-panel"><div className="moves-heading"><h2 className="detail-section-title">MOVIMIENTOS POR NIVEL</h2><span>{moves.length} MOV.</span></div>{moves.length ? <div className="level-moves"><table className="move-table"><thead><tr><th>NIVEL</th><th>MOVIMIENTO</th><th>TIPO</th><th>CLASE</th></tr></thead><tbody>{moves.map((move) => {
             const info = moveDetails[move.name] || MOVE_INFO_CACHE.get(move.name);
             return <tr key={move.name}><td>{move.level === 0 ? '—' : move.level}</td><td>{info?.name || humanizeSlug(move.name)}</td><td>{info?.type ? <TypeBadge type={info.type} /> : '—'}</td><td>{info?.damageClass ? <MoveClassIcon damageClass={info.damageClass} /> : '—'}</td></tr>;
           })}</tbody></table></div> : <p className="detail-muted">No hay movimientos por nivel registrados.</p>}</section>
+          </div>
         </div>
       </>}
     </main>

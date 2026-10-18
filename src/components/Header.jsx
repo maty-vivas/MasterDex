@@ -5,7 +5,7 @@ import Brand from './Brand.jsx';
 import FilterGroup from './FilterGroup.jsx';
 
 /** Encabezado de la Pokédex con búsqueda, filtros combinables y orden. */
-export default function Header({ onHome, query, setQuery, filters, setFilters, sort, setSort }) {
+export default function Header({ onHome, onRandomPokemon, randomPokemonDisabled, query, setQuery, filters, setFilters, sort, setSort }) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const filterRef = useRef(null);
@@ -40,6 +40,10 @@ export default function Header({ onHome, query, setQuery, filters, setFilters, s
   return <header className="topbar">
     <Brand onHome={onHome} />
     <div className="header-controls">
+      <button className="random-pokemon-button" type="button" onClick={onRandomPokemon} disabled={randomPokemonDisabled} aria-label="Abrir un Pokémon aleatorio" title="Descubrir un Pokémon al azar">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4.5h12v11H4z" /><circle cx="7" cy="7.5" r=".9" /><circle cx="13" cy="12.5" r=".9" /><circle cx="10" cy="10" r=".9" /></svg>
+        <span>ALEATORIO</span>
+      </button>
       <div className="search-filter" ref={filterRef}>
         <label className="header-search" htmlFor="pokemon-search"><span className="search-icon" aria-hidden="true" /><input id="pokemon-search" type="search" placeholder="Buscar Pokémon…" autoComplete="off" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
         <button className={`filter-trigger${filterOpen ? ' is-open' : ''}${activeFilterCount ? ' has-filters' : ''}`} type="button" aria-expanded={filterOpen} aria-controls="pokemon-filter-menu" onClick={() => { setSortOpen(false); setFilterOpen((open) => !open); }}>

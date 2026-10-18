@@ -206,15 +206,69 @@ export function formLabel(form, speciesName) {
   return `${humanizeSlug(speciesName)} ${humanizeSlug(slug)}`;
 }
 
-/** Resume los requisitos evolutivos disponibles en PokéAPI para mostrarlos entre dos etapas. */
+const EVOLUTION_ITEM_LABELS = {
+  'dawn-stone': 'PIEDRA ALBA', 'deep-sea-scale': 'ESCAMA MARINA', 'deep-sea-tooth': 'DIENTE MARINO',
+  'dusk-stone': 'PIEDRA NOCHE', 'fire-stone': 'PIEDRA FUEGO', 'ice-stone': 'PIEDRA HIELO',
+  'kings-rock': 'ROCA DEL REY', 'leaf-stone': 'PIEDRA HOJA', 'moon-stone': 'PIEDRA LUNAR',
+  'oval-stone': 'PIEDRA OVAL', 'prism-scale': 'ESCAMA BELLA', 'protector': 'PROTECTOR',
+  'razor-claw': 'GARRA AFILADA', 'razor-fang': 'COLMILLO AGUDO', 'shiny-stone': 'PIEDRA DÍA',
+  'sun-stone': 'PIEDRA SOLAR', 'thunder-stone': 'PIEDRA TRUENO', 'water-stone': 'PIEDRA AGUA',
+  'whipped-dream': 'DULCE DE NATA', 'sachet': 'SAQUITO', 'sweet-apple': 'MANZANA DULCE',
+  'tart-apple': 'MANZANA ÁCIDA', 'cracked-pot': 'TETERA AGRIETADA', 'chipped-pot': 'TETERA DESPORTILLADA',
+  'galarica-cuff': 'BRAZALETE GALAR', 'galarica-wreath': 'CORONA GALAR', 'black-augurite': 'PIEDRA NEGRA',
+  'peat-block': 'TURBA', 'scroll-of-darkness': 'PERGAMINO DE LA OSCURIDAD',
+  'scroll-of-waters': 'PERGAMINO DE LAS AGUAS', 'auspicious-armor': 'ARMADURA MALDITA',
+  'malicious-armor': 'ARMADURA SINIESTRA', 'linking-cord': 'CABLE UNIÓN',
+};
+
+const EVOLUTION_LOCATIONS = {
+  'eterna-forest': 'BOSQUE ETERNO', 'moss-rock': 'ROCA MUSGO', 'ice-rock': 'ROCA HIELO',
+  'mount-lanakila': 'MONTE LANAKILA', 'mount-coronet': 'MONTE CORONA', 'chargestone-cave': 'CUEVA ELECTRORROCA',
+};
+
+function evolutionItemLabel(item) {
+  return EVOLUTION_ITEM_LABELS[item] || humanizeSlug(item).toUpperCase();
+}
+
+/** Traduce y reúne todas las condiciones de una evolución, incluidas las combinadas y alternativas. */
 export function evolutionRequirement(child) {
-  const detail = child.evolution_details?.[0];
-  if (!detail) return 'EVOLUCIONA';
-  if (detail.min_level) return `NIVEL ${detail.min_level}`;
-  if (detail.item?.name) return humanizeSlug(detail.item.name);
-  if (detail.min_happiness) return 'AMISTAD';
-  if (detail.time_of_day) return detail.time_of_day === 'day' ? 'DE DÍA' : 'DE NOCHE';
-  if (detail.trigger?.name === 'trade') return 'INTERCAMBIO';
-  if (detail.trigger?.name) return humanizeSlug(detail.trigger.name).toUpperCase();
-  return 'EVOLUCIONA';
+  // PokéAPI enumera cada roca musgo/hielo de juegos distintos como una regla aparte;
+  // la ficha las resume en un único método por evolución, junto con la piedra alternativa.
+  if (child.species?.name === 'leafeon') return 'USAR PIEDRA HOJA O SUBIR NIVEL · CERCA DE ROCA MUSGO';
+  if (child.species?.name === 'glaceon') return 'USAR PIEDRA HIELO O SUBIR NIVEL · CERCA DE ROCA HIELO';
+  // Afecto y amistad representan el mismo requisito histórico; el movimiento Hada aplica en ambas variantes.
+  if (child.species?.name === 'sylveon') return 'AFECTO 2+ · MOV. TIPO HADA O AMISTAD 160+ · MOV. TIPO HADA';
+
+  const details = child.evolution_details || [];
+  if (!details.length) return 'EVOLUCIONA';
+
+  const alternatives = details.map((detail) => {
+    const requirements = [];
+    const trigger = detail.trigger?.name;
+    if (detail.min_level) requirements.push(`NIVEL ${detail.min_level}`);
+    if (detail.item?.name) requirements.push(`USAR ${evolutionItemLabel(detail.item.name)}`);
+    if (trigger === 'trade') requirements.push('INTERCAMBIO');
+    else if (!detail.item && trigger && trigger !== 'level-up') requirements.push(humanizeSlug(trigger).toUpperCase());
+    if (detail.held_item?.name) requirements.push(`CON ${evolutionItemLabel(detail.held_item.name)} EQUIPADO`);
+    if (detail.min_happiness) requirements.push(`AMISTAD ${detail.min_happiness}+`);
+    if (detail.min_affection) requirements.push(`AFECTO ${detail.min_affection}+`);
+    if (detail.min_beauty) requirements.push(`BELLEZA ${detail.min_beauty}+`);
+    if (detail.time_of_day) requirements.push(detail.time_of_day === 'day' ? 'DE DÍA' : 'DE NOCHE');
+    if (detail.known_move?.name) requirements.push(`CON ${humanizeSlug(detail.known_move.name).toUpperCase()}`);
+    if (detail.known_move_type?.name) requirements.push(`MOVIMIENTO DE TIPO ${typeLabel(detail.known_move_type.name)}`);
+    if (detail.location?.name) requirements.push(`EN ${EVOLUTION_LOCATIONS[detail.location.name] || humanizeSlug(detail.location.name).toUpperCase()}`);
+    if (detail.gender === 1) requirements.push('HEMBRA');
+    if (detail.gender === 2) requirements.push('MACHO');
+    if (detail.party_species?.name) requirements.push(`CON ${humanizeSlug(detail.party_species.name).toUpperCase()} EN EL EQUIPO`);
+    if (detail.party_type?.name) requirements.push(`CON UN POKÉMON DE TIPO ${typeLabel(detail.party_type.name)} EN EL EQUIPO`);
+    if (detail.trade_species?.name) requirements.push(`INTERCAMBIAR POR ${humanizeSlug(detail.trade_species.name).toUpperCase()}`);
+    if (detail.needs_overworld_rain) requirements.push('CON LLUVIA');
+    if (detail.relative_physical_stats !== null && detail.relative_physical_stats !== undefined) {
+      requirements.push(detail.relative_physical_stats > 0 ? 'ATAQUE > DEFENSA' : detail.relative_physical_stats < 0 ? 'ATAQUE < DEFENSA' : 'ATAQUE = DEFENSA');
+    }
+    if (detail.turn_upside_down) requirements.push('CONSOLA INVERTIDA');
+    return [...new Set(requirements)].join(' · ') || (trigger === 'level-up' ? '' : 'EVOLUCIONA');
+  });
+
+  return [...new Set(alternatives)].join(' O ');
 }

@@ -17,9 +17,10 @@ El repositorio contiene un frontend React/Vite y un backend Node pequeño que si
 ### Implementado en el código
 
 - Lista nacional limitada a los primeros 1.025 registros, con búsqueda, orden y carga incremental.
+- En la lista, ↑/↓ mueve el foco entre filas y actualiza la previsualización. Si esas flechas se pulsan fuera de un control interactivo, ↓ entra por la primera fila visible y ↑ por la última fila visible. Enter o Espacio abre la ficha; las flechas dentro del buscador y otros controles siguen perteneciendo a esos controles.
 - Filtros combinables por región y tipo.
 - Panel de vista previa y ficha por especie con pestañas de formas y variantes.
-- Datos de altura, peso, grupos huevo, hábitat, tipos, habilidades, estadísticas, evoluciones y movimientos aprendidos por nivel.
+- Datos de altura, peso, grupos huevo, hábitat, tipos, habilidades, estadísticas, evoluciones, movimientos aprendidos por nivel y efectividad defensiva de tipos.
 - Descripciones de habilidades en un popover flotante con encabezado “Descripción” y resaltado turquesa de la habilidad activa; prioriza el español y, si recurre a inglés, ofrece traducción bajo demanda, caché y alternancia entre traducción y original; cierra al hacer clic fuera o pulsar Escape.
 - Selección separada de imágenes 2D y recursos gráficos 3D disponibles.
 - Selector Shiny en la imagen principal, que cambia el recurso de la forma elegida sin cambiar entre los modos 2D/3D.
@@ -98,15 +99,16 @@ Los detalles consultados por React se mantienen también en memoria durante la s
 - `src/main.jsx`: punto de entrada React, Strict Mode e importación de estilos.
 - `src/App.jsx`: estado compartido, carga inicial del catálogo y navegación entre pantallas.
 - `src/components/`: componentes de interfaz reutilizables, en módulos individuales: `Brand.jsx`, `FilterGroup.jsx`, `Header.jsx`, `MoveClassIcon.jsx`, `PokemonRow.jsx`, `PreviewPanel.jsx`, `SparkleIcon.jsx`, `StatIcon.jsx`, `TypeBadge.jsx` y `EvolutionBranch.jsx`.
+- `src/components/TypeEffectiveness.jsx`: tabla que agrupa los tipos de ataque según el multiplicador de daño recibido por la forma seleccionada.
 - `src/screens/DexScreen.jsx`: interfaz de lista, búsqueda, filtrado regional y por tipo, orden y paginación incremental.
 - `src/screens/PokemonDetailPage.jsx`: interfaz y carga de datos de la ficha, sus formas, habilidades, descripción, estadísticas, evoluciones y movimientos.
 - `src/data/constants.js`: URLs de API/recursos, nombres y colores de tipos, regiones, etiquetas estadísticas y cachés compartidas.
 - `src/utils/pokemon.js`: funciones de dominio para rutas, iconos y sprites, traducción genérica de textos descriptivos con caché, etiquetas de formas, grupos huevo/hábitats, movimientos y requisitos evolutivos.
+- `src/utils/typeEffectiveness.js`: tabla local del chart moderno de tipos y cálculo de multiplicadores defensivos; combina ambos tipos sin solicitudes adicionales a PokéAPI.
 - `src/assets/pkmn-types/`: iconos SVG de los 18 tipos usados en el filtro. El archivo `fight.svg` corresponde al tipo `fighting`.
 - `src/assets/moves/`: imágenes PNG de las clases Físico, Especial y Estado.
 - `src/assets/stats/`: iconos SVG de PS, Ataque, Defensa, Ataque Especial, Defensa Especial y Velocidad.
 - `src/assets/ability-info.svg`: icono SVG local que acompaña el encabezado de las descripciones de habilidades.
-- `src/assets/masterdex-pokedex.svg`: propuesta vectorial morada de una Pokédex abierta, conservada como referencia; no está conectada a la interfaz.
 - `node_modules/`: dependencias instaladas, ignoradas por Git.
 - `dist/`: salida generada de Vite, ignorada por Git; no editarla manualmente.
 - `data/`: datos SQLite persistentes generados localmente; no commitear el archivo de base ni sus WAL.
@@ -120,6 +122,7 @@ No se encontró carpeta `docs/`. La suite Playwright vive en `tests/e2e/` y actu
 - Carga 1.025 registros de `/pokemon?limit=1025`. El ID nacional de cada fila se infiere del índice de la respuesta más uno.
 - La búsqueda compara nombre parcial, número exacto y número rellenado a cuatro dígitos; se elimina un `#` inicial.
 - Orden desde un menú flotante: número de Pokédex o alfabético. El criterio nuevo empieza ascendente; volver a elegir el criterio activo invierte la dirección. Los valores internos son `id-asc`, `id-desc`, `name-asc` y `name-desc`.
+- El botón `ALEATORIO` del encabezado elige una especie aleatoria del catálogo nacional completo y la abre con la navegación de ficha normal; no limita el sorteo a la búsqueda ni a los filtros activos. Está deshabilitado mientras el catálogo no está disponible.
 - La lista muestra 60 entradas inicialmente y agrega más cerca del final del contenedor.
 - Al pasar el cursor o enfocar una fila, se carga una ficha en memoria para mostrar ilustración oficial y tipos en el panel de vista previa.
 
@@ -139,23 +142,27 @@ No se encontró carpeta `docs/`. La suite Playwright vive en `tests/e2e/` y actu
 - Formas desde `pokemon-species.varieties`; etiquetas construidas por `formLabel` para megaevoluciones, Gigamax, formas regionales y otros sufijos.
 - En Zygarde se omiten de las pestañas los nombres terminados en `-power-construct`, que repetían visualmente las formas 10% y 50%; las pestañas visibles se ordenan como habitual, 10%, completa y Mega. Esta excepción solo afecta el selector.
 - Los sprites normales y Shiny 2D priorizan `generation-v/black-white/front_default` o `front_shiny`, y después `sprites.front_default` o `front_shiny`. Los recursos 3D priorizan sprites de generaciones VI–VIII, después `generation-ix/legends-za`, `scarlet-violet` y otros juegos de la IX, usando `front_shiny` cuando Shiny está activo. El recurso es una imagen/render estático, no un modelo 3D interactivo. Si falta el recurso Shiny en el modo seleccionado, se informa que no está disponible y no se muestra la versión normal como sustituto.
+- La preferencia 2D/3D se mantiene en `App` y se persiste en `localStorage` con la clave `masterdex-view-mode`; sobrevive al cambio de especie, a volver a la lista y a recargar la aplicación. El selector completo es un único botón: cualquier clic alterna el modo y el indicador cian se desliza entre las etiquetas. Usa `aria-pressed`; solo se acepta `2d` o `3d`, y ante almacenamiento bloqueado o valor inválido se usa 2D.
+- La imagen principal de la ficha y el arte de la vista previa muestran una Poké Ball CSS giratoria con banda cian mientras sus imágenes remotas se cargan. El estado está asociado a la URL activa para evitar que una carga tardía de otra forma o Pokémon quite el indicador actual; al fallar, se oculta el indicador y la ficha conserva su mensaje de recurso ausente. La animación respeta `prefers-reduced-motion`.
 - El control `SHINY`, compacto y con un icono de destello, está en la esquina inferior izquierda del panel principal y alterna la variante activa; cambiar de Pokémon o forma vuelve a Normal.
 - En miniaturas de formas se usa la función compartida `latestPokemonIcon`; las pestañas aún tienen fallback visual a sprite 2D/render si no hay icono.
 - Los textos descriptivos priorizan entradas españolas (`es`, `es-419`); si no hay ninguna, usan inglés y muestran controles para solicitar traducción o volver al original. El texto traducido se almacena en `localStorage` por contenido.
 - Habilidades y movimientos prefieren nombres localizados `es`/`es-419`, con nombre derivado del slug como fallback. Al abrir una habilidad, se muestra primero `effect_entries` en español si existe; de lo contrario, el texto descriptivo más reciente de `flavor_text_entries` en español. Si faltan ambos, se usa el efecto breve en inglés y se etiqueta como tal; si no hay texto en ningún idioma, se informa que la descripción no está disponible. El texto inglés puede traducirse bajo demanda con el mismo endpoint y caché local de las descripciones de especie. La ficha consulta el recurso de habilidad una sola vez para localizar el nombre y obtener la descripción. La descripción se almacena como `abilityInfo.text` y la interfaz debe leer esa misma propiedad.
 - Estadísticas: barras escaladas sobre 255. Categorías de color según valor: `<20`, `<50`, `<90`, `<150` y `>=150`. Los seis iconos están en `src/assets/stats/` y sus colores son diferentes.
 - Altura y peso vienen del detalle de cada forma; los grupos huevo y el hábitat se leen del recurso de especie ya cargado y aparecen como metadatos en texto simple debajo de la descripción. Los slugs conocidos se presentan en español mediante mapas locales en `src/utils/pokemon.js`, sin llamadas extra. PokéAPI puede no asignar hábitat a algunas especies y en ese caso se ve “No especificado”.
-- Evoluciones: cadena evolutiva de PokéAPI, requisitos simplificados a etiquetas y arte oficial de sprites.
+- Evoluciones: representa el árbol completo de PokéAPI. Los tramos lineales muestran la condición y una flecha SVG entre tarjetas. Las bifurcaciones conectan cada alternativa a un raíl común, sin paneles ni títulos visibles; las líneas llegan hasta las tarjetas y la punta conserva su proporción. El raíl une los centros de la primera y última alternativa. Los destinos conservan el mismo tamaño que las demás tarjetas y se alinean por columna independientemente del largo del requisito. Eevee mantiene las evoluciones con piedra a la izquierda y las de amistad/afecto a la derecha. En pantallas angostas la cadena puede desplazarse horizontalmente. Las ubicaciones históricas repetidas de Leafeon/Glaceon se resumen en una sola condición de roca musgo/hielo, junto con la piedra alternativa; Sylveon unifica afecto 2 corazones o amistad 160+ con el requisito común de movimiento Hada. Se conserva el arte oficial y la navegación a cada ficha.
 - Movimientos por nivel: selecciona el grupo de versiones más reciente encontrado entre los datos de aprendizaje por nivel; los iconos de clase son PNG locales y el tipo usa las cápsulas de tipo reutilizadas.
+- Debilidades y resistencias: combina los tipos defensores de la forma activa con el chart moderno y muestra ataques ×4, ×2, ×1, ×½, ×¼ o ×0. Es un cálculo por tipos; deliberadamente no modela habilidades, objetos ni estados de batalla.
 
 ## 7. Diseño y experiencia de usuario
 
-- Estética de Pokédex tecnológica, con grilla de fondo, encabezado oscuro, acento turquesa, paneles claros, tablas y estados visuales de selección.
+- Estética de Pokédex tecnológica, con grilla de fondo, encabezado oscuro, acento turquesa, paneles claros, tablas y estados visuales de selección. En la ficha, los paneles de Cadena Evolutiva y Movimientos ocupan filas completas: la cadena usa el ancho disponible y Movimientos aparece debajo.
 - `Inter` para texto general y `Barlow Condensed` para encabezados técnicos; ambas se cargan desde Google Fonts en `index.html`.
 - Componentes reutilizables en `src/components/`: `Brand`, `FilterGroup`, `TypeBadge`, `MoveClassIcon`, `SparkleIcon`, `PokemonRow`, `PreviewPanel`, `StatIcon` y `EvolutionBranch`.
 - `styles.css` incluye reglas para escritorio y móvil (`max-width: 900px`, `700px` y otras heredadas), y diseños distintos para lista y ficha.
 - Las filas de la Pokédex conservan el contorno trapezoidal; el icono está separado en un panel carbón medio y una franja cian cuya inclinación coincide con el borde oblicuo del panel. El bloque se reduce en móvil.
-- Hay etiquetas ARIA en filtros, navegación de formas, tabla de características y selector de vista; las filas se pueden abrir con Enter o Espacio. No se encontró una auditoría formal WCAG ni soporte explícito de `prefers-reduced-motion`.
+- Hay etiquetas ARIA en filtros, navegación de formas, tabla de características y selector de vista; las filas se pueden abrir con Enter o Espacio. No se encontró una auditoría formal WCAG. Las animaciones de interfaz actuales respetan `prefers-reduced-motion`.
+- La lista escalona suavemente la entrada de filas nuevas y resalta el foco de teclado; los cambios de imagen, popovers, filtros/orden y secciones de ficha usan transiciones cortas. El botón de volver responde al hover y a la activación. Todas estas animaciones se desactivan con `prefers-reduced-motion`.
 - La hoja CSS está compactada en reglas muy largas y contiene capas de estilos anteriores y overrides. Al modificarla, inspeccionar reglas existentes y breakpoints antes de agregar otra excepción.
 
 ## 8. Backend, datos e integraciones
@@ -215,7 +222,7 @@ El servidor E2E se inicia en puertos dedicados (`4173` frontend, `3101` backend)
 - La función `latestPokemonIcon` compartida por lista y pestañas de formas prioriza Sword/Shield Gen VIII, iconos generales Gen VIII, Gen VII, Gen VI y Scarlet/Violet Gen IX. La lista prueba estos candidatos ante fallos de carga y nunca cae a sprites 2D; se excluyen Brilliant Diamond/Shining Pearl y Legends: Arceus.
 - Las vistas 2D y 3D eligen fuentes distintas. No reutilizar un render de la categoría 3D para afirmar que existe sprite 2D.
 - Los recursos propios de iconografía se conservan en `src/assets`.
-- El encabezado mantiene el símbolo circular genérico implementado en CSS; la propuesta morada SVG está conservada como referencia y no se usa en el sitio.
+- El encabezado mantiene el símbolo circular genérico implementado en CSS. Las propuestas anteriores de favicon y logo se retiraron tras la decisión del usuario de diseñar su identidad visual más adelante.
 - La traducción de textos ingleses es una acción explícita del usuario y conserva el original.
 - Las descripciones de habilidades se muestran en un popover al pulsar cada tarjeta; priorizan datos localizados de PokéAPI, identifican el fallback inglés y se cierran al hacer clic fuera o pulsar Escape.
 
@@ -233,6 +240,7 @@ El servidor E2E se inicia en puertos dedicados (`4173` frontend, `3101` backend)
 - La selección del grupo de movimientos se basa en el número máximo de `version_group` disponible por movimiento; puede no representar un único juego elegido por el usuario.
 - La traducción Google no tiene garantía de disponibilidad, calidad, SLA ni clave formal; usa almacenamiento local del navegador.
 - Playwright ya cubre búsqueda, filtros múltiples, orden y menú, navegación de ficha, datos de especie, traducciones, formas, algunos recursos ausentes, error/reintento y uso móvil. Aún no cubre visualmente la matriz completa de sprites ni los límites de color de cada estadística, y la suite no prueba sincronización/lectura real de SQLite. No se encontraron linter ni formatter. La DB inicial comprimida ocupa aproximadamente 18 MB; el archivo se excluye de Git y un despliegue necesita persistencia y copias de seguridad.
+- La tabla «Debilidades y resistencias» recién añadida todavía no tiene un caso E2E dedicado que compruebe efectividades de tipos simples y dobles.
 - `src/screens/PokemonDetailPage.jsx` todavía combina carga de datos y presentación de la ficha en un módulo amplio; separar esa lógica en un hook podría mejorar su mantenimiento. `styles.css` también acumula reglas antiguas y overrides compactos.
 - Los rangos `latest` de `package.json` pueden actualizar dependencias al regenerar el lockfile; conservar y revisar `package-lock.json`.
 - `node:sqlite` todavía puede emitir `ExperimentalWarning` según la versión de Node. El código requiere Node `>=22.13.0`, donde existe `StatementSync.iterate()` sin flag experimental.
@@ -289,13 +297,28 @@ No ejecutar estas mejoras como si fueran decisiones ya tomadas; confirmar alcanc
 
 ## 16. Registro de continuidad
 
+- Se agregó el apartado «Debilidades y resistencias» a la ficha. `src/utils/typeEffectiveness.js` calcula la efectividad combinada de los tipos defensores, `src/components/TypeEffectiveness.jsx` presenta los grupos en una tabla y `styles.css` adapta el diseño a escritorio y móvil. Usa la forma activa y no añade llamadas de red; los grupos sin tipos aplicables se omiten. Comparte una fila de dos columnas con Movimientos por nivel en escritorio, debajo de la Cadena Evolutiva, y se apila en pantallas angostas. El cálculo muestra la tabla de tipos, no modificadores de combate por habilidades u objetos.
+- Para evitar que las cápsulas de tipos se partan en varias líneas, la columna del analizador tiene más ancho, las cápsulas son compactas y cada categoría permanece en una sola línea con desplazamiento horizontal si hace falta.
+- En la tabla defensiva, se muestran los multiplicadores ×0, ×½, ×¼, ×1, ×2 y ×4 sin etiquetas de categoría visibles. Cada multiplicador usa el atributo HTML `title`, igual que los iconos de clase de movimiento, para mostrar su nombre al pasar el cursor o enfocar el control: Inmune, Nada eficaz, Poco eficaz, Neutro, Eficaz y Súper eficaz, respectivamente.
+- La columna del multiplicador es compacta y su encabezado dice «DAÑO» para dedicar el ancho disponible a los tipos atacantes.
+- Los multiplicadores ×2 y ×¼ conservan sus indicadores amarillo y celeste, respectivamente, con el valor en blanco.
+- `src/screens/DexScreen.jsx` inicia la navegación al presionar ↑/↓ fuera de la lista y de controles interactivos, enfocando la primera o última fila que ya está visible según la dirección para evitar saltos al final de la tanda paginada. `src/components/PokemonRow.jsx` mueve el foco entre registros con esas teclas y conserva la apertura por Enter/Espacio; `src/components/PreviewPanel.jsx` explica las acciones por teclado y muestra el arte de la fila enfocada.
+
+- El contenido del catálogo/ficha tiene una transición direccional horizontal: al abrir, la vista anterior sale hacia la izquierda y la ficha entra desde la derecha; al volver, se invierte. Dura 0,65 s e incluye un difuminado breve. La captura animada es la raíz de la vista para evitar que el navegador intente interpolar tamaños distintos de los layouts y produzca un efecto de zoom. `.topbar` tiene su propio nombre de transición y no se anima. `src/App.jsx` coordina las rutas con `document.startViewTransition` y `flushSync`; `styles.css` define una entrada de respaldo para navegadores sin esa API y respeta movimiento reducido. También se aplica a Atrás/Adelante del navegador.
+
+- Se diseñaron barras de desplazamiento con mayor visibilidad para los contenedores desplazables de la lista, ficha, evoluciones, movimientos, filtros y opciones de formas. En Chromium usan un ancho de 10 px, pista clara, thumb gris verdoso y hover cian mediante `::-webkit-scrollbar`; en navegadores sin ese soporte se usa `scrollbar-width`/`scrollbar-color` estándar. El motivo fue que Brave ocultaba la barra aunque el panel de movimientos de Shedinja sí tenía scroll funcional.
+
 ### Historial comprobable en Git
 
 - El historial visible incluye `3d29c9f feat: improve Pokédex detail experience` y el commit inicial `9bf895b Initial MasterDex release`.
-- En el árbol de trabajo actual hay una refactorización sin commit y dos archivos PNG sin seguimiento (`src/assets/MasterDex-favicon.png`, `src/assets/MasterDex-logo.png`) que no son importados por la interfaz. No descartar ni incluir automáticamente estos recursos en otro cambio.
 
 ### Avances recientes disponibles en el contexto de esta sesión
 
+- La interfaz de `src/components/EvolutionBranch.jsx` y los estilos de evoluciones en `styles.css` se reorganizaron: las rutas simples muestran la condición encima de una flecha SVG; las bifurcaciones reutilizan ese mismo conector y distribuyen las rutas alrededor de un raíl común, sin tarjetas de agrupación ni títulos visibles. Todas las etapas mantienen el mismo tamaño de tarjeta. El requisito se ubica dentro del conector de ancho fijo para que etiquetas más largas no desplacen las tarjetas; se comprobó en la ficha de Eevee y las cinco evoluciones de piedra quedan alineadas entre sí, igual que las tres del lado derecho. La interacción respeta `prefers-reduced-motion`. La lógica recursiva de PokéAPI, las etiquetas de requisitos y la navegación a las fichas se mantienen.
+- La ficha de Eevee resumió las múltiples ubicaciones históricas de PokéAPI para Leafeon y Glaceon en sus dos métodos legibles: subir de nivel cerca de la roca musgo/hielo o usar la piedra hoja/hielo.
+- La ficha resume las dos representaciones generacionales del requisito de Sylveon como afecto 2 corazones o amistad 160+, y un movimiento de tipo Hada.
+- En escritorio, se cambió `.detail-sections-grid` a una sola columna para que Cadena Evolutiva ocupe todo el ancho de la ficha y Movimientos quede debajo; en móvil ya se mantenía una sola columna. El contenido de la cadena se centra dentro del panel cuando cabe, y conserva el scroll desde la izquierda cuando lo supera.
+- La ficha de Eevee distribuye sus ocho alternativas a ambos lados del nodo central: las cinco evoluciones por piedra elemental quedan a la izquierda y Espeon, Umbreon y Sylveon a la derecha. El requisito duplicado de Sylveon queda resumido como afecto de 2 corazones o amistad 160+, más un movimiento Hada, en `src/utils/pokemon.js`.
 - Se reemplazó el selector de orden por un menú flotante con dos criterios: N.º Pokédex y alfabético. Cada uno empieza ascendente y al volver a tocar el criterio seleccionado alterna a descendente. La función es local y no añade llamadas a PokéAPI.
 - Al elegir un criterio, el menú de orden permanece abierto para que el usuario vea el estado actualizado; la flecha rota con transición al cambiar entre ascendente y descendente.
 - La ficha muestra grupos huevo y hábitat en español como texto secundario debajo de la descripción; no ocupan tarjetas en el bloque de altura/peso. Estos campos usan los datos de especie ya solicitados, con traducciones locales de slugs y fallback “No especificado”.
@@ -316,7 +339,7 @@ No ejecutar estas mejoras como si fueran decisiones ya tomadas; confirmar alcanc
 - Se ajustó la ficha de Zygarde: 2D ya no cae a su imagen 3D; cuando falta sprite 2D muestra el estado correspondiente. En las pestañas se ocultaron las dos variedades `power-construct` redundantes visualmente y se ordenaron habitual, 10%, completa y Mega.
 - Se corrigió que las filas de la lista pasaran el registro resumido del catálogo a `latestPokemonIcon`; ese objeto no contiene `sprites`. Ahora la lista consulta la misma función con `detail`. Ante el pedido del usuario de quitar el fallback que mostraba sprites 2D, las filas intentan las demás fuentes de icono permitidas si falla una URL y ocultan la miniatura solo si ninguna carga.
 - Una revisión visual posterior en el navegador confirmó miniaturas vacías en especies sin URL de icono de Sword/Shield, iconos generales Gen VIII o Scarlet/Violet (por ejemplo, Weedle, Beedrill y Pidgey); Kakuna recibe una URL general Gen VIII que falla al cargar. Por decisión del usuario, se agregaron Gen VII y Gen VI como fallbacks, y luego Scarlet/Violet Gen IX. La fila recorre las fuentes disponibles ante errores y no recurre a sprites 2D.
-- Se creó `src/assets/masterdex-pokedex.svg` como propuesta de logo; el usuario prefirió conservarla solo como referencia y restaurar el símbolo genérico circular del encabezado.
+- Se retiraron las propuestas anteriores de logo y favicon; el encabezado conserva el símbolo circular genérico hasta que el usuario diseñe una identidad visual definitiva.
 - La conversación disponible indica que el usuario confirmó que el resultado de Zygarde quedó bien. No existe en Git un commit separado que respalde esa cronología.
 - Se añadió un control `SHINY` compacto con icono SVG de destellos en el panel de imagen de la ficha. Usa los campos `front_shiny` de los sprites en 2D y de los recursos gráficos por generación/juego en 3D, conserva el modo activo y vuelve a Normal al cambiar de especie o forma. Si no existe la variante para el modo elegido, muestra un mensaje en lugar de la imagen normal. La interfaz toma como referencia la imagen compartida por el usuario.
 - El icono SVG de destellos se centralizó en `src/components/SparkleIcon.jsx` y se comparte también en los controles `TRADUCIR AL ESPAÑOL` y `MOSTRAR TRADUCCIÓN`; en traducción, el icono usa el cian del borde en estado normal y cambia a tinta oscura en hover para conservar el contraste con el fondo cian.
@@ -329,6 +352,10 @@ No ejecutar estas mejoras como si fueran decisiones ya tomadas; confirmar alcanc
 - `package.json` declara Node `>=22.13.0`; `package-lock.json` sincroniza el campo `engines`. `node:sqlite` funciona sin paquete externo, aunque Node 25.2.1 imprime `ExperimentalWarning`.
 - En una ejecución anterior, `npm run dev` y `npm run build` fallaron dentro del entorno aislado por `spawn EPERM` al ejecutar subprocesses de Vite en Windows. El usuario confirmó que `npm run dev` funciona correctamente en su terminal habitual; no tratar aquel fallo como defecto reproducido del proyecto. El build final también pasó al ejecutarlo fuera de esa restricción.
 - La base local `data/masterdex.sqlite` está ignorada por Git; no se debe commitear. La sincronización cubre los recursos JSON que usa la aplicación, pero no los archivos de imagen, Google Fonts ni Google Translate.
+- La navegación Lista ↔ Ficha conserva la transición direccional de 0,65 s. Al abrir otro Pokémon desde una ficha (por ejemplo, desde una rama evolutiva), `src/App.jsx` clasifica el cambio como `detail` y aplica un fundido de 0,36 s con un desplazamiento vertical de 6 px; el encabezado permanece inmóvil. El fallback CSS y `prefers-reduced-motion` también contemplan esta transición.
+- Se agregaron animaciones breves para la entrada escalonada de filas (en tandas visuales de 12), el resaltado del foco de teclado, el fundido de sprites al terminar su carga —incluido el cambio Shiny—, la aparición del popover de habilidad, la apertura y selección de filtros/orden, la entrada escalonada de secciones de ficha y la respuesta hover/activación del botón de volver. El estado de selección de filtros ahora se expresa con la clase `is-selected` de `FilterGroup`; `prefers-reduced-motion` desactiva estas animaciones. `detail-hero` y su columna visual tienen prioridad de apilamiento sobre `detail-sections-grid`, para que el popover quede por encima de la Cadena Evolutiva.
+- Se agregó `ALEATORIO` a la izquierda del campo de búsqueda en `Header.jsx`; `DexScreen.jsx` elige uniformemente una entrada del catálogo nacional completo y la abre mediante `onOpen`. El botón queda inactivo durante la carga o si falla la carga del catálogo. En móvil se muestra solo el icono de dado para conservar espacio.
+- El selector de imagen 2D/3D se elevó al estado global de `App.jsx` y se guarda en `localStorage` bajo `masterdex-view-mode`. Cambiar de especie o volver a la lista conserva la última opción; Shiny sigue reiniciándose por especie como antes. El control es un único botón de ancho completo que alterna al hacer clic en cualquier lado; el indicador cian se desplaza entre modos y se desactiva con `prefers-reduced-motion`. Los localizadores E2E existentes se actualizaron al nombre accesible nuevo; no se ejecutó la suite en este cambio.
 
 ### Próximos pasos conocidos
 

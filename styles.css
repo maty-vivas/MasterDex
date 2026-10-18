@@ -180,6 +180,7 @@ body{background:#e8edeb;background-image:linear-gradient(#dfe5e2 1px,transparent
 .pokemon-row>*{position:relative;z-index:2}
 .pokemon-row:nth-child(even){--row-fill:#eff0ed}
 .pokemon-row:hover,.pokemon-row:focus-visible{--row-fill:#dff4f2}
+.pokemon-row:focus-visible{outline:2px solid #22b8bf;outline-offset:2px;filter:drop-shadow(0 0 3px #44d6db99)}
 @media(max-width:700px){.pokemon-row{margin:6px 5px 6px 0}}
 
 /* Separa visualmente el icono en un panel oscuro con un remate diagonal cian. */
@@ -198,9 +199,9 @@ body{background:#e8edeb;background-image:linear-gradient(#dfe5e2 1px,transparent
 .detail-page-art{min-height:0;height:clamp(340px,48vh,510px);border:1px solid #d4ddda}
 .detail-page-art img{width:88%;height:84%;max-height:none;object-fit:contain;transition:transform .25s ease}
 .detail-page-art.is-pixel-art img{image-rendering:pixelated;filter:none;transform:scale(1.08)}
-.detail-view-toggle{position:absolute;z-index:3;top:12px;right:12px;display:flex;padding:3px;background:#172225;border:1px solid #44d6db88}
-.detail-view-toggle button{min-width:42px;padding:7px 10px;border:0;background:transparent;color:#9ea9a8;cursor:pointer;font:700 11px 'Barlow Condensed',sans-serif;letter-spacing:1px}
-.detail-view-toggle button.selected{background:var(--cyan);color:#102023}
+.detail-view-toggle{position:absolute;z-index:3;top:12px;right:12px;display:flex;padding:3px;background:#172225;border:1px solid #44d6db88;appearance:none;cursor:pointer;color:#9ea9a8;font:700 11px 'Barlow Condensed',sans-serif;letter-spacing:1px;line-height:1;text-align:center}
+.detail-view-toggle span{min-width:42px;display:grid;place-items:center;padding:7px 10px;color:#9ea9a8}
+.detail-view-toggle span.is-active{color:#102023}
 /* El control Shiny se superpone a la imagen y conserva el modo 2D/3D seleccionado. */
 .shiny-toggle{position:absolute;z-index:3;left:12px;bottom:12px;min-height:32px;display:flex;align-items:center;gap:6px;padding:4px 9px;border:2px solid var(--cyan);background:#f3f6f3e8;color:#172225;cursor:pointer;font:700 13px 'Barlow Condensed',sans-serif;letter-spacing:1px;transition:background .16s ease,color .16s ease,transform .16s ease}
 .shiny-toggle .sparkle-icon{width:14px;height:14px;fill:currentColor;flex:none}
@@ -227,8 +228,9 @@ body{background:#e8edeb;background-image:linear-gradient(#dfe5e2 1px,transparent
 .form-option img{width:40px;height:40px;object-fit:contain}
 .form-option.selected{position:relative;z-index:1;border-color:#39bfc5;border-bottom-color:#f9fbf9;background:#f9fbf9;color:#172729}
 .form-option:hover{border-color:#39bfc5;background:#e0f6f3;color:#172729}
-.detail-sections-grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);align-items:start;gap:18px;margin:0 0 30px}
+.detail-sections-grid{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:18px;margin:0 0 30px}
 .detail-column{display:grid;gap:16px;min-width:0}
+.detail-analysis-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(340px,1fr);align-items:start;gap:18px;min-width:0}
 .detail-info-panel{min-width:0;padding:17px;background:#f9fbf9;border:1px solid #d5ddda;box-shadow:0 7px 20px #17242608}
 .detail-info-panel>.detail-section-title,.moves-heading .detail-section-title{margin:0 0 13px;color:#39494c}
 .abilities-panel{position:relative;z-index:5}
@@ -252,15 +254,6 @@ body{background:#e8edeb;background-image:linear-gradient(#dfe5e2 1px,transparent
 .ability-card:nth-child(even) .ability-description{right:0;left:auto}
 .ability-card.is-hidden .ability-description{background:#f0fbf9;border-left:3px solid #43cbd0;padding-left:11px}
 .detail-muted{margin:0;color:#879291;font-size:11px;line-height:1.6}
-.evolution-branch{text-align:center}
-.evolution-entry{width:min(100%,260px);min-height:62px;display:grid;grid-template-columns:44px auto 1fr;align-items:center;gap:8px;margin:0 auto;padding:5px 10px;border:1px solid #dbe2df;background:#f0f3f1;color:#657274;text-align:left;cursor:pointer}
-.evolution-entry:hover,.evolution-entry.is-current{border-color:#43cbd0;background:#e5f7f5}
-.evolution-entry img{width:42px;height:42px;object-fit:contain}
-.evolution-entry span{font:600 11px 'Barlow Condensed',sans-serif;letter-spacing:.5px;white-space:nowrap}
-.evolution-entry strong{color:#253336;font-size:11px;font-weight:600;text-transform:capitalize}
-.evolution-children{display:grid;gap:10px;margin-top:5px}
-.evolution-path{display:grid;justify-items:center;gap:3px}
-.evolution-arrow{color:#42bfc4;font-size:17px;line-height:1}
 .moves-panel{padding-bottom:10px}
 .moves-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .level-moves{max-height:560px;overflow:auto;border-top:1px solid #e0e6e3;scrollbar-color:#9eaeab #edf1ef;scrollbar-width:thin}
@@ -268,11 +261,11 @@ body{background:#e8edeb;background-image:linear-gradient(#dfe5e2 1px,transparent
 .level-move:nth-child(even){background:#f1f4f2}
 .level-move>span{color:#0080a6;font:700 11px 'Barlow Condensed',sans-serif;letter-spacing:.5px}
 .level-move strong{color:#3d4b4e;font-size:11px;font-weight:600;text-transform:capitalize}
-@media(max-width:900px){.detail-screen{padding:18px 22px 40px}.detail-hero{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:20px}.detail-page-art{height:clamp(300px,42vh,420px)}.detail-sections-grid{gap:13px}.detail-info-panel{padding:14px}}
+@media(max-width:900px){.detail-screen{padding:18px 22px 40px}.detail-hero{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:20px}.detail-page-art{height:clamp(300px,42vh,420px)}.detail-sections-grid{gap:13px}.detail-analysis-grid{grid-template-columns:1fr;gap:13px}.detail-info-panel{padding:14px}}
 @media(max-width:700px){.detail-screen{height:calc(100dvh - 62px);padding:13px 13px 28px}.detail-hero{grid-template-columns:1fr;gap:15px;margin:13px 0 16px}.detail-page-art{height:min(42vh,340px)}.detail-page-art img{height:82%;width:90%}.detail-overview{padding:3px 3px 0}.detail-overview>.eyebrow{font-size:11px}.detail-overview h1{font-size:42px}.detail-overview .detail-types{margin-bottom:15px}.detail-overview .detail-description{font-size:11px;margin-bottom:13px}.physical-facts{margin-bottom:16px}.detail-sections-grid{grid-template-columns:1fr;gap:12px}.detail-column{gap:12px}.detail-info-panel{padding:13px}.detail-form-selector{margin-top:10px;padding:0}.form-options{gap:4px}.form-option{min-height:46px;padding-right:9px;font-size:11px}.form-option img{width:34px;height:34px}.level-moves{max-height:390px}.detail-error,.detail-loading{height:45vh}}
 
 /* Filas compactas de estadísticas y bloques horizontales de evoluciones y movimientos. */
-.detail-view-toggle button:first-child{min-width:48px}
+.detail-view-toggle span:first-child{min-width:42px}
 .detail-image-missing{position:relative;color:#7e8a89;font:700 11px 'Barlow Condensed',sans-serif;letter-spacing:1px}
 .detail-page-art.is-pixel-art img{image-rendering:pixelated;filter:none;transform:scale(1.18)}
 .stats-title{margin:0!important;padding:9px 11px;background:#353b3d;color:#f8fbfa;border:1px solid #283033;font:700 11px Inter,sans-serif;letter-spacing:.2px;text-align:center}
@@ -295,16 +288,52 @@ body{background:#e8edeb;background-image:linear-gradient(#dfe5e2 1px,transparent
 /* Barras de estadísticas: cada fila asigna su color por rango y su propio color de icono. */
 .stat-hp{--stat-color:#ef4444;--stat-icon-color:#ef4444}.stat-attack{--stat-color:#e8eb2c;--stat-icon-color:#f28b32}.stat-defense{--stat-color:#f4bd36;--stat-icon-color:#f5d742}.stat-special-attack{--stat-color:#55e849;--stat-icon-color:#4098e8}.stat-special-defense{--stat-color:#a6e83a;--stat-icon-color:#4ec95f}.stat-speed{--stat-color:#c85de2;--stat-icon-color:#e65aa8}
 .stat-label i{color:var(--stat-icon-color,#234b73)}
-.evolution-chain-scroll{overflow-x:auto;padding:6px 2px 11px;scrollbar-color:#a9b7b4 #edf1ef;scrollbar-width:thin}
-.evolution-branch{display:flex;align-items:center;gap:8px;width:max-content;text-align:center}
-.evolution-entry{width:108px;min-height:127px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;margin:0;padding:5px 7px;border:1px solid #dce2df;background:#fff;text-align:center;white-space:normal}
-.evolution-entry img{width:82px;height:78px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 2px 2px #17272922)}
-.evolution-entry span{color:#677577;font:600 11px 'Barlow Condensed',sans-serif}
-.evolution-entry strong{color:#0076c8;font-size:11px;line-height:1.15}
-.evolution-children{display:flex;align-items:center;gap:9px;margin:0}
-.evolution-path{display:flex;align-items:center;gap:5px}
-.evolution-link{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:55px;color:#39494b;font:600 11px 'Barlow Condensed',sans-serif;letter-spacing:.2px;white-space:nowrap}
-.evolution-arrow{color:#7a8584;font-size:21px;line-height:1}
+.evolution-chain-scroll{overflow-x:auto;padding:12px 8px 17px;scrollbar-color:#a9b7b4 #edf1ef;scrollbar-width:thin}
+.evolution-branch{display:flex;align-items:center;gap:22px;width:max-content;margin-inline:auto;padding:4px 0;text-align:center}
+.evolution-branch.is-eevee-split{gap:22px}
+.evolution-entry{position:relative;width:126px;min-height:148px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;overflow:hidden;margin:0;padding:8px 8px 9px;border:1px solid #d4dfdc;background:linear-gradient(155deg,#fff 0%,#f8fbfa 100%);color:#526164;text-align:center;white-space:normal;cursor:pointer;box-shadow:0 3px 9px #1727290b;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease,background .16s ease}
+.evolution-entry::before{position:absolute;inset:0 0 auto;height:3px;background:#c5d6d2;content:"";transition:background .16s ease}
+.evolution-entry:hover,.evolution-entry.is-current{transform:translateY(-2px);border-color:#43cbd0;background:#eaf8f6;box-shadow:0 6px 14px #1b73721a}
+.evolution-entry:hover::before,.evolution-entry.is-current::before{background:#35cbd0}
+.evolution-entry:focus-visible{outline:2px solid #36cbd0;outline-offset:3px}
+.evolution-entry img{width:82px;height:82px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 2px 2px #17272922)}
+.evolution-entry span{color:#6b7b7c;font:600 10px 'Barlow Condensed',sans-serif;letter-spacing:.6px}
+.evolution-entry strong{color:#0076c8;font-size:12px;font-weight:650;line-height:1.15;text-transform:capitalize}
+@media(prefers-reduced-motion:reduce){.evolution-entry{transition:none!important}}
+.evolution-options{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:8px;color:#344649}
+.evolution-options.is-linear{width:max-content;flex-direction:row;align-items:center;gap:0}
+.evolution-options.is-branching{--evolution-branch-gap:12px;width:max-content;gap:12px;padding:0;border:0;background:none;box-shadow:none}
+.evolution-options.is-branching::after{position:absolute;top:50%;width:24px;border-top:2px solid #39bfc5;content:""}
+.evolution-options.is-branching:not(.is-left)::after{left:-24px}
+.evolution-options.is-branching.is-left::before{right:0;left:auto}
+.evolution-options.is-branching.is-left::after{right:-24px}
+.evolution-options-grid{display:flex;align-items:center;gap:10px}
+.evolution-options.is-branching .evolution-options-grid{display:grid;grid-auto-rows:1fr;align-items:stretch;gap:var(--evolution-branch-gap)}
+.evolution-option{position:relative;min-width:0}
+.evolution-options.is-branching>.evolution-options-grid>.evolution-option{min-height:148px;display:flex;align-items:center;padding-left:16px}
+.evolution-options.is-branching>.evolution-options-grid>.evolution-option::before{position:absolute;top:50%;left:0;width:16px;border-top:2px solid #39bfc5;content:""}
+.evolution-options.is-branching>.evolution-options-grid>.evolution-option::after{position:absolute;top:50%;bottom:calc(-50% - var(--evolution-branch-gap));left:0;border-left:2px solid #39bfc5;content:""}
+.evolution-options.is-branching>.evolution-options-grid>.evolution-option:last-child::after{display:none}
+.evolution-options.is-branching.is-left>.evolution-options-grid>.evolution-option{padding-right:16px;padding-left:0}
+.evolution-options.is-branching.is-left>.evolution-options-grid>.evolution-option::before,.evolution-options.is-branching.is-left>.evolution-options-grid>.evolution-option::after{right:0;left:auto}
+.evolution-condition{display:block;max-width:100%;color:#526467;font:700 9px 'Barlow Condensed',sans-serif;letter-spacing:.45px;line-height:1.25;text-align:center;text-wrap:balance}
+.evolution-options.is-branching .evolution-condition{max-width:112px;color:#526467}
+.evolution-option-route{width:max-content;display:flex;align-items:center;justify-content:center;gap:7px;min-width:0}
+.evolution-option.is-left .evolution-option-route{flex-direction:row-reverse}
+.evolution-link{width:112px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#344649;font:600 10px 'Barlow Condensed',sans-serif;letter-spacing:.25px;line-height:1.2;text-align:center}
+.evolution-link .evolution-condition{width:100%}
+.evolution-arrow-svg{width:43px;height:13px;overflow:visible;flex:none;fill:none;stroke:#39bfc5;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.evolution-arrow-svg.is-left{transform:rotate(180deg)}
+.evolution-options.is-branching>.evolution-options-grid>.evolution-option>.evolution-option-route{gap:7px;height:100%;align-items:stretch}
+.evolution-options.is-branching>.evolution-options-grid>.evolution-option>.evolution-option-route>.evolution-link{position:relative;align-self:stretch;justify-content:center}
+.evolution-options.is-branching>.evolution-options-grid>.evolution-option>.evolution-option-route>.evolution-link>.evolution-condition{position:absolute;right:0;bottom:calc(50% + 7px);left:0;z-index:1;margin:auto}
+.evolution-options.is-branching>.evolution-options-grid>.evolution-option>.evolution-option-route>.evolution-link>.evolution-branch-arrow{position:absolute;top:calc(50% - 5.5px);width:calc(100% + 7px);height:13px}
+.evolution-options.is-branching:not(.is-left)>.evolution-options-grid>.evolution-option>.evolution-option-route>.evolution-link>.evolution-branch-arrow{left:0}
+.evolution-options.is-branching.is-left>.evolution-options-grid>.evolution-option>.evolution-option-route>.evolution-link>.evolution-branch-arrow{right:0}
+.evolution-branch-arrow-line{position:absolute;top:50%;right:0;left:0;border-top:2px solid #39bfc5;transform:translateY(-50%)}
+.evolution-branch-arrow-head{position:absolute;top:0;width:9px;height:13px;overflow:visible;fill:none;stroke:#39bfc5;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.evolution-branch-arrow:not(.is-left) .evolution-branch-arrow-head{right:-1px}
+.evolution-branch-arrow.is-left .evolution-branch-arrow-head{left:-1px;transform:rotate(180deg)}
 .move-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px}
 .move-table th{position:sticky;top:0;z-index:1;height:30px;padding:6px 8px;background:#353b3d;color:#fff;border:1px solid #283033;font:700 11px Inter,sans-serif;letter-spacing:.3px;text-align:center}
 .move-table th:nth-child(1){width:60px}.move-table th:nth-child(3){width:120px}.move-table th:nth-child(4){width:78px}
@@ -315,7 +344,7 @@ body{background:#e8edeb;background-image:linear-gradient(#dfe5e2 1px,transparent
 .move-table .type-badge{padding:4px 8px!important;font-size:11px!important;line-height:1!important}
 .move-class-icon{display:inline-block;width:42px;height:20px;object-fit:contain;vertical-align:middle;image-rendering:auto}
 .level-moves{max-height:500px;overflow:auto}
-@media(max-width:700px){.detail-stats .stat-row{grid-template-columns:104px 32px minmax(56px,1fr);min-height:32px;font-size:11px}.stat-label{gap:5px;padding:3px 6px}.stat-label i{font-size:16px}.move-table{min-width:510px}.level-moves{max-height:370px}.move-table th:nth-child(3){width:105px}.move-table th:nth-child(4){width:100px}.evolution-entry{width:93px;min-height:115px}.evolution-entry img{width:70px;height:68px}.evolution-link{min-width:48px}}
+@media(max-width:700px){.detail-stats .stat-row{grid-template-columns:104px 32px minmax(56px,1fr);min-height:32px;font-size:11px}.stat-label{gap:5px;padding:3px 6px}.stat-label i{font-size:16px}.move-table{min-width:510px}.level-moves{max-height:370px}.move-table th:nth-child(3){width:105px}.move-table th:nth-child(4){width:100px}.evolution-chain-scroll{padding-inline:3px}.evolution-branch,.evolution-branch.is-eevee-split{gap:16px}.evolution-entry{width:108px;min-height:132px}.evolution-entry img{width:72px;height:72px}.evolution-options.is-branching{--evolution-branch-gap:9px;gap:9px}.evolution-options.is-branching>.evolution-options-grid>.evolution-option{min-height:132px}.evolution-link{width:88px}.evolution-arrow-svg{width:36px}}
 
 /* Limita los sprites altos para que los porcentajes de tamaño no desborden el panel. */
 .detail-page-art.is-3d-sprite img{position:absolute;top:50px;left:5%;width:90%;height:calc(100% - 80px);max-width:none;max-height:none;object-fit:contain;object-position:center;transform:none;image-rendering:pixelated}
@@ -393,3 +422,158 @@ body{background:#e8edeb;background-image:linear-gradient(#dfe5e2 1px,transparent
   .filter-type-icon{width:15px;height:15px}
   .filter-menu-footer{margin-top:0;padding-top:8px}
 }
+
+/* Barras de desplazamiento visibles y acordes a la paleta de MasterDex. */
+@supports selector(::-webkit-scrollbar){
+  .pokemon-list,.detail-screen,.evolution-chain-scroll,.level-moves,.filter-menu,.form-options{scrollbar-width:auto;scrollbar-color:auto}
+  .pokemon-list::-webkit-scrollbar,.detail-screen::-webkit-scrollbar,.evolution-chain-scroll::-webkit-scrollbar,.level-moves::-webkit-scrollbar,.filter-menu::-webkit-scrollbar,.form-options::-webkit-scrollbar{width:10px;height:10px}
+  .pokemon-list::-webkit-scrollbar-track,.detail-screen::-webkit-scrollbar-track,.evolution-chain-scroll::-webkit-scrollbar-track,.level-moves::-webkit-scrollbar-track,.filter-menu::-webkit-scrollbar-track,.form-options::-webkit-scrollbar-track{background:#e4ebe8}
+  .pokemon-list::-webkit-scrollbar-thumb,.detail-screen::-webkit-scrollbar-thumb,.evolution-chain-scroll::-webkit-scrollbar-thumb,.level-moves::-webkit-scrollbar-thumb,.filter-menu::-webkit-scrollbar-thumb,.form-options::-webkit-scrollbar-thumb{border:2px solid #e4ebe8;border-radius:6px;background:#71827f}
+  .pokemon-list::-webkit-scrollbar-thumb:hover,.detail-screen::-webkit-scrollbar-thumb:hover,.evolution-chain-scroll::-webkit-scrollbar-thumb:hover,.level-moves::-webkit-scrollbar-thumb:hover,.filter-menu::-webkit-scrollbar-thumb:hover,.form-options::-webkit-scrollbar-thumb:hover{background:#27aeb5}
+  .pokemon-list::-webkit-scrollbar-corner,.detail-screen::-webkit-scrollbar-corner,.evolution-chain-scroll::-webkit-scrollbar-corner,.level-moves::-webkit-scrollbar-corner,.filter-menu::-webkit-scrollbar-corner,.form-options::-webkit-scrollbar-corner{background:#e4ebe8}
+}
+@supports not selector(::-webkit-scrollbar){
+  .pokemon-list,.detail-screen,.evolution-chain-scroll,.level-moves,.filter-menu,.form-options{scrollbar-width:thin;scrollbar-color:#71827f #e4ebe8}
+}
+
+/* Tabla de efectividad defensiva: combina ambos tipos y conserva las cápsulas del sitio. */
+.type-effectiveness-panel{margin:0}
+.type-effectiveness-heading{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:5px 14px;margin-bottom:12px}
+.type-effectiveness-heading .detail-section-title{margin:0;color:#39494c}
+.type-effectiveness-heading p,.type-effectiveness-note{margin:0;color:#718082;font-size:11px;line-height:1.5}
+.type-effectiveness-table-wrap{width:100%;overflow-x:auto}
+.type-effectiveness-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px}
+.type-effectiveness-table thead th{height:29px;padding:6px 10px;background:#353b3d;color:#fff;border:1px solid #283033;font:700 11px Inter,sans-serif;text-align:left}
+.type-effectiveness-table thead th:first-child{width:64px}
+.type-effectiveness-table tbody tr:nth-child(even){background:#eeeee8}
+.type-effectiveness-table tbody tr:nth-child(odd){background:#fff}
+.type-effectiveness-table tbody th,.type-effectiveness-table tbody td{min-height:34px;padding:5px 8px;border:1px solid #c7ccca}
+.type-effectiveness-table tbody th{display:flex;align-items:center;gap:0;text-align:left}
+.effectiveness-multiplier{display:grid;flex:none;min-width:42px;height:26px;place-items:center;border-radius:3px;background:#748084;color:#fff;font:700 15px 'Barlow Condensed',sans-serif}
+.effectiveness-quadruple .effectiveness-multiplier{background:#e9674c}
+.effectiveness-double .effectiveness-multiplier{background:#e6bd35;color:#fff}
+.effectiveness-neutral .effectiveness-multiplier{background:#748084}
+.effectiveness-half .effectiveness-multiplier{background:#58a85b}
+.effectiveness-quarter .effectiveness-multiplier{background:#61bfe0;color:#fff}
+.effectiveness-immune .effectiveness-multiplier{background:#323b3e}
+.effectiveness-type-list{display:flex;flex-wrap:nowrap;align-items:center;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#71827f #e4ebe8}
+.effectiveness-type-list .type-badge{padding:4px 4px!important;font-size:9px!important}
+.effectiveness-type-list::-webkit-scrollbar{height:7px}
+.effectiveness-type-list::-webkit-scrollbar-track{background:#e4ebe8}
+.effectiveness-type-list::-webkit-scrollbar-thumb{border:1px solid #e4ebe8;border-radius:5px;background:#71827f}
+.effectiveness-type-list::-webkit-scrollbar-thumb:hover{background:#27aeb5}
+@supports selector(::-webkit-scrollbar){.effectiveness-type-list{scrollbar-width:auto;scrollbar-color:auto}}
+@supports not selector(::-webkit-scrollbar){.effectiveness-type-list{scrollbar-width:thin;scrollbar-color:#71827f #e4ebe8}}
+.type-effectiveness-note{margin-top:9px}
+@media(max-width:700px){
+  .type-effectiveness-panel{margin:0;padding:12px}
+  .type-effectiveness-heading{display:block;margin-bottom:9px}
+  .type-effectiveness-heading .detail-section-title{margin-bottom:4px;font-size:13px}
+  .type-effectiveness-table thead th:first-child{width:56px}
+  .type-effectiveness-table thead th{padding:6px;font-size:10px}
+  .type-effectiveness-table tbody th,.type-effectiveness-table tbody td{padding:5px}
+  .type-effectiveness-table tbody th{gap:5px}
+  .effectiveness-multiplier{min-width:34px;height:24px;font-size:14px}
+  .effectiveness-type-list{gap:4px}
+  .effectiveness-type-list .type-badge{padding:4px 4px!important;font-size:9px!important}
+}
+
+/* Separa el movimiento Lista ↔ Ficha del cambio entre fichas y deja quieto el encabezado. */
+.topbar{view-transition-name:masterdex-header}
+::view-transition-group(masterdex-header){animation:none}
+::view-transition-old(masterdex-header),::view-transition-new(masterdex-header){animation:none}
+:root[data-route-direction="forward"]::view-transition-old(root){animation:masterdex-exit-left .65s cubic-bezier(.22,.72,.2,1) both}
+:root[data-route-direction="forward"]::view-transition-new(root){animation:masterdex-enter-right .65s cubic-bezier(.22,.72,.2,1) both}
+:root[data-route-direction="back"]::view-transition-old(root){animation:masterdex-exit-right .65s cubic-bezier(.22,.72,.2,1) both}
+:root[data-route-direction="back"]::view-transition-new(root){animation:masterdex-enter-left .65s cubic-bezier(.22,.72,.2,1) both}
+:root[data-route-direction="detail"]::view-transition-old(root){animation:masterdex-detail-exit .36s ease both}
+:root[data-route-direction="detail"]::view-transition-new(root){animation:masterdex-detail-enter .36s ease both}
+@keyframes masterdex-exit-left{to{opacity:.45;filter:blur(4px);transform:translateX(-100%)}}
+@keyframes masterdex-enter-right{from{opacity:.65;filter:blur(5px);transform:translateX(100%)}to{opacity:1;filter:blur(0);transform:translateX(0)}}
+@keyframes masterdex-exit-right{to{opacity:.45;filter:blur(4px);transform:translateX(100%)}}
+@keyframes masterdex-enter-left{from{opacity:.65;filter:blur(5px);transform:translateX(-100%)}to{opacity:1;filter:blur(0);transform:translateX(0)}}
+@keyframes masterdex-detail-exit{to{opacity:0;filter:blur(2px)}}
+@keyframes masterdex-detail-enter{from{opacity:0;filter:blur(2px);transform:translateY(6px)}to{opacity:1;filter:blur(0);transform:translateY(0)}}
+@supports not (view-transition-name:masterdex-content){
+  .app-shell.route-fallback-forward .detail-screen{animation:masterdex-enter-right .65s cubic-bezier(.22,.72,.2,1) both}
+  .app-shell.route-fallback-back .dex-layout{animation:masterdex-enter-left .65s cubic-bezier(.22,.72,.2,1) both}
+  .app-shell.route-fallback-detail .detail-screen{animation:masterdex-detail-enter .36s ease both}
+}
+@media(prefers-reduced-motion:reduce){
+  ::view-transition-group(root),::view-transition-old(root),::view-transition-new(root){animation-duration:.01ms!important}
+  ::view-transition-group(masterdex-header),::view-transition-old(masterdex-header),::view-transition-new(masterdex-header){animation-duration:.01ms!important}
+  .app-shell.route-fallback-forward .detail-screen,.app-shell.route-fallback-back .dex-layout,.app-shell.route-fallback-detail .detail-screen{animation:none!important}
+}
+
+/* Da feedback mientras llegan sprites o ilustraciones remotas y se detiene al cargarlos. */
+.visual-resource-loader,.preview-image-loader{position:absolute;z-index:2;left:50%;top:50%;display:flex;align-items:center;gap:8px;transform:translate(-50%,-50%);border:1px solid #44cbd0;background:#f7faf8ed;color:#354548;box-shadow:0 4px 16px #17272918;font:700 11px 'Barlow Condensed',sans-serif;letter-spacing:1px;white-space:nowrap}
+.visual-resource-loader{padding:9px 12px}
+.preview-image-loader{padding:8px 10px;font-size:10px}
+.loading-pokeball{position:relative;width:20px;height:20px;flex:none;display:block;border:1.5px solid #263538;border-radius:50%;background:linear-gradient(to bottom,#263538 0 44%,#44d6db 44% 56%,#f7faf8 56% 100%);box-shadow:0 0 8px #44d6db70;transform-style:preserve-3d;backface-visibility:hidden;animation:loading-pokeball-spin .9s linear infinite}
+.loading-pokeball::after{position:absolute;top:50%;left:50%;width:7px;height:7px;border:1.5px solid #263538;border-radius:50%;background:#f7faf8;box-shadow:0 0 0 1px #44d6db;content:"";transform:translate(-50%,-50%)}
+@keyframes loading-pokeball-spin{0%{transform:perspective(80px) rotateY(0deg)}50%{transform:perspective(80px) rotateY(180deg)}100%{transform:perspective(80px) rotateY(360deg)}}
+@media(prefers-reduced-motion:reduce){.loading-pokeball{animation:none;box-shadow:0 0 8px #44d6db70}}
+
+/* Animaciones breves de entrada y respuesta para lista, menús y ficha. */
+.detail-hero{position:relative;z-index:2}
+.detail-visual-column{position:relative;z-index:2}
+.detail-overview{position:relative;z-index:1}
+.detail-sections-grid{position:relative;z-index:1}
+.pokemon-row{animation:dex-row-enter .24s cubic-bezier(.2,.7,.25,1) both;animation-delay:var(--row-entry-delay,0ms);outline:2px solid transparent;outline-offset:2px;transition:background .16s ease,outline-color .16s ease,outline-offset .16s ease,filter .16s ease,box-shadow .16s ease}
+.pokemon-row:focus-visible{outline-color:#22b8bf;outline-offset:3px;box-shadow:inset 3px 0 #44d6db}
+@keyframes dex-row-enter{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+.filter-menu,.sort-menu{transform-origin:top center;animation:dex-menu-enter .18s cubic-bezier(.2,.7,.25,1) both}
+@keyframes dex-menu-enter{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.filter-option{transition:background .14s ease,color .14s ease,transform .14s ease}
+.filter-option:hover,.filter-option.is-selected{transform:translateX(2px)}
+.filter-option.is-selected{background:#dff2ef;color:#28494a}
+.sort-option{transition:background .14s ease,border-color .14s ease,box-shadow .14s ease,transform .14s ease}
+.sort-option.selected{animation:dex-sort-selected .22s ease-out both}
+.sort-option:active{transform:translateY(1px)}
+@keyframes dex-sort-selected{from{background:#c9f1ed;box-shadow:0 0 0 3px #44d6db44}to{background:#e5f4f2;box-shadow:0 0 0 0 #44d6db00}}
+
+.detail-sprite{opacity:0;transition:opacity .24s ease}
+.detail-sprite.is-loaded{opacity:1}
+.ability-description{transform-origin:top left;animation:dex-popover-enter .18s cubic-bezier(.2,.7,.25,1) both}
+@keyframes dex-popover-enter{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+.detail-screen>.detail-form-selector,.detail-visual-column,.detail-overview,.abilities-panel,.detail-screen>.detail-sections-grid>.detail-info-panel,.detail-analysis-grid>section{animation:detail-content-enter .24s cubic-bezier(.2,.7,.25,1) both}
+.detail-screen>.detail-form-selector{animation-delay:0ms}
+.detail-visual-column{animation-delay:30ms}
+.detail-overview{animation-delay:65ms}
+.abilities-panel{animation-delay:95ms}
+.detail-screen>.detail-sections-grid>.detail-info-panel{animation-delay:130ms}
+.detail-analysis-grid>section:first-child{animation-delay:165ms}
+.detail-analysis-grid>section:last-child{animation-delay:200ms}
+@keyframes detail-content-enter{from{opacity:0;filter:blur(2px);transform:translateY(6px)}to{opacity:1;filter:blur(0);transform:translateY(0)}}
+
+.back-button{transition:background-color .15s ease,border-color .15s ease,transform .15s ease}
+.back-button:hover{background:#2a383b;border-color:#44d6db}
+.back-button:active{transform:translateY(1px)}
+.back-button span{display:inline-block;transition:transform .15s ease}
+.back-button:hover span{transform:translateX(-3px)}
+.back-button:active span{transform:translateX(-5px)}
+.back-button:focus-visible{outline:2px solid #44d6db;outline-offset:3px}
+
+@media(prefers-reduced-motion:reduce){
+  .pokemon-row,.filter-menu,.sort-menu,.filter-option,.sort-option,.detail-sprite,.ability-description,.detail-screen>.detail-form-selector,.detail-visual-column,.detail-overview,.abilities-panel,.detail-screen>.detail-sections-grid>.detail-info-panel,.detail-analysis-grid>section,.back-button,.back-button span{animation:none!important;transition:none!important}
+}
+
+/* Acceso directo para descubrir una especie al azar desde el encabezado. */
+.random-pokemon-button{height:40px;min-width:76px;flex:none;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 9px;border:1px solid #536164;background:#f8faf9;color:#1d292c;cursor:pointer;font:700 11px 'Barlow Condensed',sans-serif;letter-spacing:1px;transition:background .15s ease,color .15s ease,border-color .15s ease,transform .15s ease}
+.random-pokemon-button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.random-pokemon-button:hover:not(:disabled){transform:translateY(-1px);border-color:#44d6db;background:#172326;color:#f6ffff}
+.random-pokemon-button:active:not(:disabled){transform:translateY(1px)}
+.random-pokemon-button:focus-visible{outline:2px solid #44d6db;outline-offset:2px}
+.random-pokemon-button:disabled{opacity:.45;cursor:wait}
+@media(max-width:700px){.random-pokemon-button{width:37px;min-width:37px;height:37px;padding:0}.random-pokemon-button span{display:none}}
+@media(prefers-reduced-motion:reduce){.random-pokemon-button{transition:none!important}}
+
+/* La banda cian se desliza entre 2D y 3D; el estado sigue persistiendo en App. */
+.detail-view-toggle{overflow:hidden;isolation:isolate}
+.detail-view-toggle::before{content:"";position:absolute;z-index:0;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);background:var(--cyan);transform:translateX(0);transition:transform .24s cubic-bezier(.2,.8,.25,1)}
+.detail-view-toggle[data-mode="3d"]::before{transform:translateX(100%)}
+.detail-view-toggle span{position:relative;z-index:1;flex:1}
+.detail-view-toggle:focus-visible{outline:2px solid #172225;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.detail-view-toggle::before{transition:none!important}}

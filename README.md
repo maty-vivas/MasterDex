@@ -35,7 +35,7 @@ MasterDex es una Pokédex web para buscar Pokémon, recorrer sus formas y consul
 - Consulta tipos, altura, peso, grupos huevo, hábitat, habilidades normales y ocultas, y estadísticas base.
 - Pulsa una habilidad para consultar su descripción en una tarjeta flotante con título propio; se prioriza el texto en español y, si solo existe en inglés, puedes pedir la traducción y alternar entre ambos textos. El resultado se conserva en la caché local. El menú se cierra al hacer clic fuera o pulsar Escape.
 - Compara las estadísticas con barras de color e iconos propios.
-- Recorre la cadena evolutiva y sus requisitos.
+- Recorre cadenas evolutivas lineales y ramificadas, con requisitos resumidos por alternativa; agrupa los métodos de Leafeon y Glaceon, y unifica los requisitos generacionales de Sylveon.
 - Revisa los movimientos que aprende por nivel, con su tipo y clase (Físico, Especial o Estado).
 - Lee la descripción en español cuando existe. Si solo hay una descripción en inglés, puedes solicitar su traducción y volver al original.
 

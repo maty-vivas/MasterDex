@@ -6,14 +6,17 @@ import PreviewPanel from '../components/PreviewPanel.jsx';
 
 /** Pantalla de lista: combina búsqueda, filtros y carga incremental sin almacenar datos duplicados. */
 export default function DexScreen({ pokemon, details, loading, error, query, filters, setFilters, sort, onHome, setQuery, setSort, onOpen, onRetry, onLoadPreview }) {
-  // preview es la fila enfocada o sobrevolada; visibleCount controla el scroll incremental.
-  const [preview, setPreview] = useState(null);
+  // Se conservan por separado foco y hover para que salir con el ratón no borre la
+  // previsualización de una fila que el usuario sigue recorriendo con el teclado.
+  const [hoveredPokemon, setHoveredPokemon] = useState(null);
+  const [focusedPokemon, setFocusedPokemon] = useState(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const listRef = useRef(null);
   const pageLock = useRef(false);
   const filterRequest = useRef(0);
   const [typeMembers, setTypeMembers] = useState(null);
   const [filterLoading, setFilterLoading] = useState(false);
+  const preview = hoveredPokemon || focusedPokemon;
 
   // Calcula los resultados en memoria: OR entre regiones elegidas y OR entre tipos elegidos.
   // Cuando hay filtros de ambos grupos, los resultados deben cumplir ambos grupos.
@@ -40,7 +43,32 @@ export default function DexScreen({ pokemon, details, loading, error, query, fil
   }, [query, filters, sort]);
   // El bloqueo evita que varios eventos scroll seguidos agreguen tandas antes del siguiente render.
   useEffect(() => { pageLock.current = false; }, [visibleCount]);
-  useEffect(() => { setPreview(null); }, [query, filters, sort]);
+  useEffect(() => { setHoveredPokemon(null); setFocusedPokemon(null); }, [query, filters, sort]);
+
+  // Si se pulsan las flechas fuera de un control, la navegación entra por una
+  // fila que ya está a la vista, sin saltar al final de la tanda paginada.
+  useEffect(() => {
+    function focusListFromPage(event) {
+      if ((event.key !== 'ArrowDown' && event.key !== 'ArrowUp') || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('.pokemon-row, input, textarea, select, button, a, [contenteditable="true"], [role="menu"], [role="listbox"], [role="option"]')) return;
+
+      const list = listRef.current;
+      const rows = [...(list?.querySelectorAll('.pokemon-row') || [])];
+      if (!list || !rows.length) return;
+      const listBounds = list.getBoundingClientRect();
+      const visibleRows = rows.filter((row) => {
+        const bounds = row.getBoundingClientRect();
+        return bounds.bottom > listBounds.top && bounds.top < listBounds.bottom;
+      });
+      const entryRows = visibleRows.length ? visibleRows : rows;
+      event.preventDefault();
+      (event.key === 'ArrowDown' ? entryRows[0] : entryRows[entryRows.length - 1]).focus();
+    }
+
+    document.addEventListener('keydown', focusListFromPage);
+    return () => document.removeEventListener('keydown', focusListFromPage);
+  }, []);
 
   // El panel de la lista es la zona desplazable; este puente permite que la rueda funcione
   // aunque el cursor esté sobre el panel de vista previa u otra zona no interactiva.
@@ -94,8 +122,15 @@ export default function DexScreen({ pokemon, details, loading, error, query, fil
     }
   }
 
+  /** Abre una especie al azar de toda la Pokédex, sin limitarse a búsqueda o filtros activos. */
+  function openRandomPokemon() {
+    if (!pokemon.length) return;
+    const randomIndex = Math.floor(Math.random() * pokemon.length);
+    onOpen(pokemon[randomIndex].id);
+  }
+
   return <>
-    <Header onHome={onHome} query={query} setQuery={setQuery} filters={filters} setFilters={setFilters} sort={sort} setSort={setSort} />
+    <Header onHome={onHome} onRandomPokemon={openRandomPokemon} randomPokemonDisabled={loading || error || pokemon.length === 0} query={query} setQuery={setQuery} filters={filters} setFilters={setFilters} sort={sort} setSort={setSort} />
     <main className="dex-layout">
       <PreviewPanel pokemon={preview} detail={preview ? details[preview.id] : null} />
       <section className="dex-list-panel" aria-label="Lista Pokédex">
@@ -104,7 +139,7 @@ export default function DexScreen({ pokemon, details, loading, error, query, fil
           {!loading && error && <div className="error-state"><strong>NO SE PUDO CONECTAR CON LA POKÉDEX</strong><span>Comprueba tu conexión e inténtalo de nuevo.</span><button onClick={onRetry}>REINTENTAR</button></div>}
           {!loading && !error && filterLoading && <div className="loading-state"><span className="loader" /><span>APLICANDO FILTROS…</span></div>}
           {!loading && !error && !filterLoading && !filtered.length && <div className="empty-state">NO SE ENCONTRARON POKÉMON.</div>}
-          {!loading && !error && !filterLoading && shown.map((item) => <PokemonRow key={item.id} pokemon={item} detail={details[item.id]} onPreview={setPreview} onLoadPreview={onLoadPreview} onOpen={() => onOpen(item.id)} />)}
+          {!loading && !error && !filterLoading && shown.map((item, index) => <PokemonRow key={item.id} pokemon={item} detail={details[item.id]} entryIndex={index} onHoverPreview={setHoveredPokemon} onFocusPreview={setFocusedPokemon} onLoadPreview={onLoadPreview} onOpen={() => onOpen(item.id)} />)}
         </div>
         <div className="pagination-row"><span>{loading ? 'CARGANDO REGISTROS' : `MOSTRANDO ${shown.length} DE ${filtered.length}`}</span></div>
       </section>

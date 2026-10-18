@@ -17,7 +17,7 @@ test('muestra el sprite 2D normal de la forma seleccionada', async ({ page }) =>
 });
 
 test('cambia al sprite 3D normal al seleccionar la vista 3D', async ({ page }) => {
-  await page.getByRole('button', { name: '3D', exact: true }).click();
+  await page.getByRole('button', { name: 'Alternar vista 2D/3D' }).click();
 
   const sprite = page.locator('.detail-page-art img');
   await expect(sprite).toHaveAttribute('src', '/fixtures/pikachu-normal-3d.svg');
@@ -39,7 +39,7 @@ test('activa y desactiva la versión Shiny en el modo 2D', async ({ page }) => {
 });
 
 test('muestra la versión Shiny también al cambiar al modo 3D', async ({ page }) => {
-  await page.getByRole('button', { name: '3D', exact: true }).click();
+  await page.getByRole('button', { name: 'Alternar vista 2D/3D' }).click();
   await page.getByRole('button', { name: 'SHINY' }).click();
 
   const sprite = page.locator('.detail-page-art img');
