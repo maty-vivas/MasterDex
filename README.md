@@ -103,6 +103,25 @@ npm run sync:pokeapi -- --only-missing
 
 La sincronización inicial recorre varios miles de recursos y puede tardar unos minutos. Para actualizar los datos ya guardados, ejecuta `npm run sync:pokeapi` sin `--only-missing`.
 
+## Deploy en Vercel con Turso
+
+El frontend se compila como sitio Vite y las rutas `/api/pokeapi/v2/*` y `/api/health` se atienden mediante Vercel Functions. En producción esas funciones usan Turso; el servidor de desarrollo local conserva la caché SQLite de `data/masterdex.sqlite`.
+
+1. Conecta la integración Turso al proyecto de Vercel y confirma que `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` estén habilitadas para Production.
+2. Vincula este repositorio a Vercel. `vercel.json` define `npm run build`, `dist` y la ruta SPA `/pokemon/*`.
+3. Para copiar la caché local a Turso, vincula el directorio con Vercel CLI (elige el equipo y el proyecto `masterdex`) y descarga las variables de Production:
+
+   ```bash
+   npx vercel link
+   npx vercel env pull .env.local --environment=production --yes
+   npm run migrate:sqlite-to-turso
+   ```
+
+   `.env.local` está excluido de Git. Vercel puede escribir `[SENSITIVE]` en lugar de los valores secretos; si ocurre, reemplaza localmente `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` con los valores de la integración Turso antes de ejecutar la migración. No compartas esos valores. El importador abre `data/masterdex.sqlite` en modo de solo lectura y conserva las respuestas comprimidas. La migración puede ejecutarse de nuevo sin duplicar recursos.
+4. Haz push para que Vercel publique los cambios. Comprueba `/api/health` —debe indicar `"database":"turso"`— y luego la lista de la Pokédex.
+
+No uses las credenciales `TURSO_*` en variables `VITE_*` ni en código del navegador: deben permanecer del lado de las funciones.
+
 ## Comandos disponibles
 
 | Comando | Acción |
@@ -112,6 +131,7 @@ La sincronización inicial recorre varios miles de recursos y puede tardar unos 
 | `npm run preview` | Inicia el backend y sirve el build existente para revisarlo. |
 | `npm run start` | Inicia el backend y sirve el build en producción; ejecuta `npm run build` primero. |
 | `npm run sync:pokeapi` | Actualiza en SQLite los recursos usados por MasterDex. |
+| `npm run migrate:sqlite-to-turso` | Copia la caché local a Turso usando `.env.local`. |
 | `npm run test:e2e` | Ejecuta la suite end-to-end de Playwright en Chromium. |
 | `npm run test:e2e:ui` | Abre el modo interactivo de Playwright. |
 

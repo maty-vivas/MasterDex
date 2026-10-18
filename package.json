@@ -12,10 +12,12 @@
     "preview": "node scripts/run-app.js preview",
     "start": "node server/index.js",
     "sync:pokeapi": "node scripts/sync-pokeapi.js",
+    "migrate:sqlite-to-turso": "node --env-file=.env.local scripts/migrate-sqlite-to-turso.js",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "@vitejs/plugin-react": "latest",
     "react": "latest",
     "react-dom": "latest",
