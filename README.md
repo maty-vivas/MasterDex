@@ -105,7 +105,7 @@ La sincronización inicial recorre varios miles de recursos y puede tardar unos 
 
 ## Deploy en Vercel con Turso
 
-El frontend se compila como sitio Vite y las rutas `/api/pokeapi/v2/*` y `/api/health` se atienden mediante Vercel Functions. En producción esas funciones usan Turso; el servidor de desarrollo local conserva la caché SQLite de `data/masterdex.sqlite`.
+El frontend se compila como sitio Vite y las rutas `/api/pokeapi/v2/*` y `/api/health` se atienden mediante Vercel Functions. Un rewrite conserva la ruta y los parámetros del recurso PokéAPI y los dirige a una función estática, compatible con el enrutamiento de Vercel. En producción esas funciones usan Turso; el servidor de desarrollo local conserva la caché SQLite de `data/masterdex.sqlite`.
 
 1. Conecta la integración Turso al proyecto de Vercel y confirma que `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` estén habilitadas para Production.
 2. Vincula este repositorio a Vercel. `vercel.json` define `npm run build`, `dist` y la ruta SPA `/pokemon/*`.

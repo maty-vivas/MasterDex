@@ -1,15 +1,15 @@
-import { createPokeApiService } from '../../../server/pokeapi-service.js';
+import { createPokeApiService } from '../../server/pokeapi-service.js';
 import {
   normalizeResourcePath,
   POKEAPI_BASE,
   PokeApiResourceError,
   rewriteApiUrls,
-} from '../../../server/pokeapi-shared.js';
+} from '../../server/pokeapi-shared.js';
 import {
   ensureTursoCache,
   readTursoCachedResource,
   writeTursoCachedResource,
-} from '../../../server/turso-database.js';
+} from '../../server/turso-database.js';
 
 const { getPokeApiResource } = createPokeApiService({
   readCachedResource: readTursoCachedResource,
@@ -17,9 +17,9 @@ const { getPokeApiResource } = createPokeApiService({
 });
 
 export const config = { maxDuration: 30 };
-const localApiPrefix = '/api/pokeapi/v2';
+const resourcePathQueryKey = '__resourcePath';
 
-/** Vercel Function para los recursos que consume el frontend en /api/pokeapi/v2/*. */
+/** Vercel Function que atiende las rutas PokéAPI redirigidas desde /api/pokeapi/v2/*. */
 export default async function handler(request, response) {
   if (request.method !== 'GET') {
     response.setHeader('Allow', 'GET');
@@ -30,10 +30,13 @@ export default async function handler(request, response) {
   try {
     await ensureTursoCache();
     const incomingUrl = new URL(request.url || '/', `https://${request.headers.host || 'localhost'}`);
-    if (!incomingUrl.pathname.startsWith(`${localApiPrefix}/`)) {
+    const requestedPath = incomingUrl.searchParams.get(resourcePathQueryKey);
+    incomingUrl.searchParams.delete(resourcePathQueryKey);
+    if (!requestedPath) {
       throw new PokeApiResourceError(404, 'La ruta solicitada no existe.');
     }
-    const localPath = incomingUrl.pathname.slice(localApiPrefix.length);
+
+    const localPath = requestedPath.startsWith('/') ? requestedPath : `/${requestedPath}`;
     const resourcePath = normalizeResourcePath(`${POKEAPI_BASE}${localPath}${incomingUrl.search}`);
     const wasCached = Boolean(await readTursoCachedResource(resourcePath));
     const payload = await getPokeApiResource(resourcePath);
