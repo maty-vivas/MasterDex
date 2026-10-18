@@ -32,6 +32,7 @@ export default async function handler(request, response) {
     const incomingUrl = new URL(request.url || '/', `https://${request.headers.host || 'localhost'}`);
     const requestedPath = incomingUrl.searchParams.get(resourcePathQueryKey);
     incomingUrl.searchParams.delete(resourcePathQueryKey);
+    incomingUrl.searchParams.delete('path');
     if (!requestedPath) {
       throw new PokeApiResourceError(404, 'La ruta solicitada no existe.');
     }
