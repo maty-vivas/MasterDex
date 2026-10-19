@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { installPokeApiMocks } from './helpers/pokeapi-mocks.js';
 
+// Verifica contenido localizado de ficha, formas, traducciones, evoluciones y navegación.
 test.beforeEach(async ({ page }) => {
   await installPokeApiMocks(page);
   await page.goto('/');

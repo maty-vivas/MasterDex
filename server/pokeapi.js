@@ -1,3 +1,4 @@
+/** Conecta el servicio compartido de PokéAPI con la caché SQLite del servidor local. */
 import { readCachedResource, writeCachedResource } from './database.js';
 import { createPokeApiService } from './pokeapi-service.js';
 import {

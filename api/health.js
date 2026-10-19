@@ -1,5 +1,6 @@
 import { getTursoCachedResourceCount } from '../server/turso-database.js';
 
+/** Informa si la función de producción puede consultar la caché compartida de Turso. */
 export default async function handler(request, response) {
   if (request.method !== 'GET') {
     response.setHeader('Allow', 'GET');

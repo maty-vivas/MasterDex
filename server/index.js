@@ -41,6 +41,7 @@ function serveFrontend(request, response, pathname) {
 
   const relativePath = decodedPath.replace(/^\/+/, '');
   const requestedPath = resolve(distRoot, relativePath || 'index.html');
+  // Impide que una ruta manipulada salga de dist; las rutas SPA inexistentes vuelven a index.html.
   const isInsideDist = requestedPath === distRoot || requestedPath.startsWith(`${distRoot}${sep}`);
   const filePath = isInsideDist && existsSync(requestedPath) && statSync(requestedPath).isFile()
     ? requestedPath
@@ -60,6 +61,7 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  // Primero se atienden las rutas de API; el resto se sirve como archivo o como ruta SPA.
   if (url.pathname === '/api/health') {
     sendJson(response, 200, { status: 'ok', cachedResources: getCachedResourceCount(), offlineMode });
     return;

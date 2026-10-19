@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { installPokeApiMocks } from './helpers/pokeapi-mocks.js';
 
+// Aísla la selección 2D/3D y Shiny para verificar la URL y el texto alternativo de cada recurso.
 test.beforeEach(async ({ page }) => {
   await installPokeApiMocks(page);
   await page.goto('/');

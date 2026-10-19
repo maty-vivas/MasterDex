@@ -1,15 +1,16 @@
 import { useState } from 'react';
+import abilityInfoIcon from '../assets/ability-info.svg';
 import { ARTWORK } from '../data/constants.js';
 import { padId } from '../utils/pokemon.js';
 import TypeBadge from './TypeBadge.jsx';
 
 /** Panel contextual de la lista: Pokéball vacía o vista previa del Pokémon activo. */
-export default function PreviewPanel({ pokemon, detail }) {
+export default function PreviewPanel({ pokemon, detail, onOpen }) {
   const [artworkLoad, setArtworkLoad] = useState({ src: '', status: 'idle' });
   if (!pokemon) return <aside className="preview-panel empty-preview" aria-live="polite">
     <div className="preview-decoration" aria-hidden="true"><span className="preview-ring ring-one" /><span className="preview-ring ring-two" /><div className="preview-ball"><div className="preview-ball-top" /><div className="preview-ball-middle"><i /></div><div className="preview-ball-bottom" /></div><span className="preview-plus plus-one">＋</span><span className="preview-plus plus-two">＋</span></div>
     <p className="preview-hint">ELIGE UN POKÉMON</p>
-    <span className="preview-caption">PASA EL CURSOR O ENFOCA UN REGISTRO</span>
+    <span className="preview-caption"><span className="desktop-preview-hint">USA EL MOUSE O LAS FLECHAS DEL TECLADO</span><span className="mobile-preview-hint">TOCA UN POKÉMON PARA SELECCIONAR</span></span>
   </aside>;
 
   const artwork = `${ARTWORK}/${pokemon.id}.png`;
@@ -23,6 +24,7 @@ export default function PreviewPanel({ pokemon, detail }) {
     </div>
     <h2 className="preview-name">{pokemon.name}</h2>
     <div className="preview-types">{detail?.types.map(({ type }) => <TypeBadge key={type.name} type={type.name} />) || <span className="type-loading">CARGANDO TIPOS…</span>}</div>
-    <span className="preview-caption">VISTA PREVIA · CLIC, ENTER O ESPACIO PARA VER LA FICHA</span>
+    <span className="preview-caption">CLICK o ENTER/ESPACIO PARA VER LOS DETALLES</span>
+    <button className="preview-details-button" type="button" onClick={onOpen}><img className="ability-info-icon" src={abilityInfoIcon} alt="" aria-hidden="true" /><span>Ver detalles</span><span className="preview-details-arrow" aria-hidden="true">→</span></button>
   </aside>;
 }

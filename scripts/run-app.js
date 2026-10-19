@@ -21,6 +21,7 @@ let shuttingDown = false;
 function stop(exitCode = 0) {
   if (shuttingDown) return;
   shuttingDown = true;
+  // Ambos procesos comparten el ciclo de vida; se detienen juntos y el timeout evita quedar colgado.
   if (backend.exitCode === null) backend.kill('SIGTERM');
   if (frontend.exitCode === null) frontend.kill('SIGTERM');
   setTimeout(() => process.exit(exitCode), 1000).unref();

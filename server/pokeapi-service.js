@@ -6,6 +6,7 @@ export function createPokeApiService({
   writeCachedResource,
   maximumConcurrentRequests = Math.max(1, Number(process.env.MASTERDEX_UPSTREAM_CONCURRENCY) || 6),
 }) {
+  // Limita las consultas externas y comparte la promesa si varias pantallas piden el mismo recurso.
   const requestQueue = [];
   const inFlight = new Map();
   let activeRequests = 0;
@@ -48,6 +49,7 @@ export function createPokeApiService({
     if (!allowNetwork) {
       throw new PokeApiResourceError(503, 'El recurso no está sincronizado y el modo sin conexión está activo.');
     }
+    // Una consulta en curso ya cubre esta ruta; evita duplicar tráfico y escrituras a la caché.
     if (inFlight.has(resourcePath)) return inFlight.get(resourcePath);
 
     const request = fetchAndPersist(resourcePath).finally(() => inFlight.delete(resourcePath));

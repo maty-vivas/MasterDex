@@ -9,6 +9,7 @@ const SPECIAL_POKEMON = [
   { id: 6, name: 'charizard', types: ['fire', 'flying'] },
   { id: 7, name: 'squirtle', types: ['water'] },
   { id: 25, name: 'pikachu', types: ['electric'] },
+  { id: 133, name: 'eevee', types: ['normal'] },
   { id: 152, name: 'marill', types: ['water', 'fairy'] },
   { id: 718, name: 'zygarde', types: ['dragon', 'ground'] },
 ];
@@ -94,6 +95,17 @@ function evolutionChain(id) {
   if (Number(id) === 1) return { chain: {
     species: { name: 'bulbasaur', url: speciesUrl(1) },
     evolves_to: [{ species: { name: 'ivysaur', url: speciesUrl(2) }, evolution_details: [{ min_level: 16 }], evolves_to: [{ species: { name: 'venusaur', url: speciesUrl(3) }, evolution_details: [{ min_level: 32 }], evolves_to: [] }] }],
+  } };
+  if (Number(id) === 133) return { chain: {
+    species: { name: 'eevee', url: speciesUrl(133) },
+    evolves_to: [
+      [134, 'vaporeon'], [135, 'jolteon'], [136, 'flareon'], [196, 'espeon'],
+      [197, 'umbreon'], [470, 'leafeon'], [471, 'glaceon'], [700, 'sylveon'],
+    ].map(([speciesId, name]) => ({
+      species: { name, url: speciesUrl(speciesId) },
+      evolution_details: [],
+      evolves_to: [],
+    })),
   } };
   const record = ALL_RECORDS.find((pokemon) => pokemon.id === Number(id));
   return record ? { chain: { species: { name: record.name, url: speciesUrl(record.id) }, evolution_details: [], evolves_to: [] } } : null;

@@ -10,13 +10,37 @@ export default function DexScreen({ pokemon, details, loading, error, query, fil
   // previsualización de una fila que el usuario sigue recorriendo con el teclado.
   const [hoveredPokemon, setHoveredPokemon] = useState(null);
   const [focusedPokemon, setFocusedPokemon] = useState(null);
+  const [selectedTouchPokemon, setSelectedTouchPokemon] = useState(null);
+  const [mobileViewport, setMobileViewport] = useState(() => window.matchMedia('(max-width: 700px)').matches);
+  const [touchPreview, setTouchPreview] = useState(() => window.matchMedia('(max-width: 700px), (hover: none) and (pointer: coarse)').matches || navigator.maxTouchPoints > 0);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const listRef = useRef(null);
   const pageLock = useRef(false);
   const filterRequest = useRef(0);
   const [typeMembers, setTypeMembers] = useState(null);
   const [filterLoading, setFilterLoading] = useState(false);
-  const preview = hoveredPokemon || focusedPokemon;
+  const preview = touchPreview
+    ? focusedPokemon || selectedTouchPokemon || hoveredPokemon
+    : hoveredPokemon || focusedPokemon;
+
+  useEffect(() => {
+    const touchMedia = window.matchMedia('(hover: none) and (pointer: coarse)');
+    const mobileMedia = window.matchMedia('(max-width: 700px)');
+    const updateInputModes = () => {
+      const isMobileViewport = mobileMedia.matches;
+      const isTouch = isMobileViewport || touchMedia.matches || navigator.maxTouchPoints > 0;
+      setMobileViewport(isMobileViewport);
+      setTouchPreview(isTouch);
+      if (!isTouch) setSelectedTouchPokemon(null);
+    };
+    updateInputModes();
+    touchMedia.addEventListener('change', updateInputModes);
+    mobileMedia.addEventListener('change', updateInputModes);
+    return () => {
+      touchMedia.removeEventListener('change', updateInputModes);
+      mobileMedia.removeEventListener('change', updateInputModes);
+    };
+  }, []);
 
   // Calcula los resultados en memoria: OR entre regiones elegidas y OR entre tipos elegidos.
   // Cuando hay filtros de ambos grupos, los resultados deben cumplir ambos grupos.
@@ -43,7 +67,7 @@ export default function DexScreen({ pokemon, details, loading, error, query, fil
   }, [query, filters, sort]);
   // El bloqueo evita que varios eventos scroll seguidos agreguen tandas antes del siguiente render.
   useEffect(() => { pageLock.current = false; }, [visibleCount]);
-  useEffect(() => { setHoveredPokemon(null); setFocusedPokemon(null); }, [query, filters, sort]);
+  useEffect(() => { setHoveredPokemon(null); setFocusedPokemon(null); setSelectedTouchPokemon(null); }, [query, filters, sort]);
 
   // Si se pulsan las flechas fuera de un control, la navegación entra por una
   // fila que ya está a la vista, sin saltar al final de la tanda paginada.
@@ -131,15 +155,19 @@ export default function DexScreen({ pokemon, details, loading, error, query, fil
 
   return <>
     <Header onHome={onHome} onRandomPokemon={openRandomPokemon} randomPokemonDisabled={loading || error || pokemon.length === 0} query={query} setQuery={setQuery} filters={filters} setFilters={setFilters} sort={sort} setSort={setSort} />
-    <main className="dex-layout">
-      <PreviewPanel pokemon={preview} detail={preview ? details[preview.id] : null} />
+    <main className={`dex-layout${touchPreview ? ' touch-preview' : ''}`}>
+      <PreviewPanel pokemon={preview} detail={preview ? details[preview.id] : null} onOpen={() => preview && onOpen(preview.id)} />
       <section className="dex-list-panel" aria-label="Lista Pokédex">
         <div className="pokemon-list" ref={listRef} onScroll={handleListScroll} aria-live="polite">
           {loading && <div className="loading-state"><span className="loader" /><span>CONECTANDO CON LA POKÉDEX…</span></div>}
           {!loading && error && <div className="error-state"><strong>NO SE PUDO CONECTAR CON LA POKÉDEX</strong><span>Comprueba tu conexión e inténtalo de nuevo.</span><button onClick={onRetry}>REINTENTAR</button></div>}
           {!loading && !error && filterLoading && <div className="loading-state"><span className="loader" /><span>APLICANDO FILTROS…</span></div>}
           {!loading && !error && !filterLoading && !filtered.length && <div className="empty-state">NO SE ENCONTRARON POKÉMON.</div>}
-          {!loading && !error && !filterLoading && shown.map((item, index) => <PokemonRow key={item.id} pokemon={item} detail={details[item.id]} entryIndex={index} onHoverPreview={setHoveredPokemon} onFocusPreview={setFocusedPokemon} onLoadPreview={onLoadPreview} onOpen={() => onOpen(item.id)} />)}
+          {!loading && !error && !filterLoading && shown.map((item, index) => <PokemonRow key={item.id} pokemon={item} detail={details[item.id]} entryIndex={index} onHoverPreview={setHoveredPokemon} onFocusPreview={setFocusedPokemon} onLoadPreview={onLoadPreview} previewOnActivate={mobileViewport} previewOnTouch={touchPreview && !mobileViewport} previewSelected={selectedTouchPokemon?.id === item.id} onSelectPreview={(selected) => {
+            if (selectedTouchPokemon?.id === selected.id) { onOpen(selected.id); return; }
+            setSelectedTouchPokemon(selected);
+            onLoadPreview(selected);
+          }} onOpen={() => onOpen(item.id)} />)}
         </div>
         <div className="pagination-row"><span>{loading ? 'CARGANDO REGISTROS' : `MOSTRANDO ${shown.length} DE ${filtered.length}`}</span></div>
       </section>

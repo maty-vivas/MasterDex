@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { installPokeApiMocks } from './helpers/pokeapi-mocks.js';
 
+// Comprueba los controles de orden y filtros, además del acceso móvil y por teclado.
 test.beforeEach(async ({ page }) => {
   await installPokeApiMocks(page);
   await page.goto('/');
@@ -62,6 +63,8 @@ test('los menús de filtro y orden se cierran con Escape y al hacer clic afuera'
 
 test('en móvil se ven los filtros en columnas y la fila se puede abrir con teclado', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Buscar Pokémon' }).click();
+  await expect(page.locator('#pokemon-search-panel')).toHaveClass(/is-open/);
   await page.getByRole('button', { name: /FILTRO/ }).click();
   await expect(page.locator('#pokemon-filter-menu')).toBeVisible();
   const regionColumns = await page.locator('.filter-group:not(.type-filter-group) .filter-options').evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(' ').length);

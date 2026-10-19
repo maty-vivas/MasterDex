@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ARTWORK, MOVE_INFO_CACHE, STAT_LABELS } from '../data/constants.js';
-import Brand from '../components/Brand.jsx';
+import Header from '../components/Header.jsx';
 import MoveClassIcon from '../components/MoveClassIcon.jsx';
 import SparkleIcon from '../components/SparkleIcon.jsx';
 import TypeBadge from '../components/TypeBadge.jsx';
@@ -23,6 +23,10 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, view
 
   // La forma y la variante Shiny son locales; el modo 2D/3D se conserva en el estado global.
   const [selectedForm, setSelectedForm] = useState(null);
+  const formOptionsRef = useRef(null);
+  const [formScroll, setFormScroll] = useState({ left: false, right: false });
+  const evolutionChainRef = useRef(null);
+  const [evolutionScroll, setEvolutionScroll] = useState({ left: false, right: false });
   const [expandedAbility, setExpandedAbility] = useState(null);
   const [isShiny, setIsShiny] = useState(false);
   const [imageLoad, setImageLoad] = useState({ src: '', status: 'idle' });
@@ -33,6 +37,14 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, view
   const descriptionTranslationController = useRef(null);
   const abilityTranslationControllers = useRef(new Map());
   const abilityPopoverRef = useRef(null);
+
+  // El título sigue el nombre de la especie visible en la ficha.
+  useEffect(() => {
+    if (!pokemon) return;
+    const localizedName = species?.names?.find((entry) => entry.language.name === 'es')?.name
+      || species?.names?.find((entry) => entry.language.name === 'es-419')?.name;
+    document.title = `MasterDex - ${localizedName || humanizeSlug(pokemon.name)}`;
+  }, [pokemon, species]);
 
   // Cierra la descripción flotante al interactuar fuera de su tarjeta o pulsar Escape.
   useEffect(() => {
@@ -191,6 +203,69 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, view
         return order(a) - order(b);
       })
     : forms;
+  const updateFormScroll = useCallback(() => {
+    const list = formOptionsRef.current;
+    if (!list) return;
+    const maxScrollLeft = list.scrollWidth - list.clientWidth;
+    setFormScroll((current) => {
+      const left = list.scrollLeft > 1;
+      const right = maxScrollLeft - list.scrollLeft > 1;
+      return current.left === left && current.right === right ? current : { left, right };
+    });
+  }, []);
+  useEffect(() => {
+    const list = formOptionsRef.current;
+    if (!list) return undefined;
+    updateFormScroll();
+    list.addEventListener('scroll', updateFormScroll, { passive: true });
+    window.addEventListener('resize', updateFormScroll);
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateFormScroll);
+    observer?.observe(list);
+    if (list.firstElementChild) observer?.observe(list.firstElementChild);
+    document.fonts?.ready?.then(updateFormScroll);
+    return () => {
+      list.removeEventListener('scroll', updateFormScroll);
+      window.removeEventListener('resize', updateFormScroll);
+      observer?.disconnect();
+    };
+  }, [forms, species?.name, updateFormScroll]);
+  useEffect(() => {
+    const list = formOptionsRef.current;
+    const selected = list?.querySelector('.form-option.selected');
+    if (!list || !selected) return;
+    const listBounds = list.getBoundingClientRect();
+    const selectedBounds = selected.getBoundingClientRect();
+    const offset = selectedBounds.left < listBounds.left
+      ? selectedBounds.left - listBounds.left
+      : selectedBounds.right > listBounds.right ? selectedBounds.right - listBounds.right : 0;
+    if (offset) list.scrollBy({ left: offset, behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }, [selectedForm, forms, species?.name]);
+  const updateEvolutionScroll = useCallback(() => {
+    const list = evolutionChainRef.current;
+    if (!list) return;
+    const maxScrollLeft = list.scrollWidth - list.clientWidth;
+    setEvolutionScroll((current) => {
+      const left = list.scrollLeft > 1;
+      const right = maxScrollLeft - list.scrollLeft > 1;
+      return current.left === left && current.right === right ? current : { left, right };
+    });
+  }, []);
+  useEffect(() => {
+    const list = evolutionChainRef.current;
+    if (!list) return undefined;
+    updateEvolutionScroll();
+    list.addEventListener('scroll', updateEvolutionScroll, { passive: true });
+    window.addEventListener('resize', updateEvolutionScroll);
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateEvolutionScroll);
+    observer?.observe(list);
+    if (list.firstElementChild) observer?.observe(list.firstElementChild);
+    document.fonts?.ready?.then(updateEvolutionScroll);
+    return () => {
+      list.removeEventListener('scroll', updateEvolutionScroll);
+      window.removeEventListener('resize', updateEvolutionScroll);
+      observer?.disconnect();
+    };
+  }, [evolution, updateEvolutionScroll]);
   useEffect(() => setIsShiny(false), [pokemon?.id, selectedForm]);
   const dexNumber = species?.pokedex_numbers?.find((entry) => entry.pokedex.name === 'national')?.entry_number || species?.id || pokemon?.id || 0;
   const moves = latestLevelMoves(detail);
@@ -198,7 +273,7 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, view
   const selectedAbilities = selectedData?.abilities || detail?.abilities || [];
 
   return <>
-    <header className="topbar detail-topbar"><Brand onHome={onBack} /></header>
+    <Header onHome={onBack} showCatalogControls={false} />
     <main className="detail-screen">
       <button type="button" className="back-button" onClick={onBack}><span aria-hidden="true">←</span> VOLVER A LA POKÉDEX</button>
       {loading && !pokemon && <div className="loading-state detail-loading"><span className="loader" /><span>CARGANDO POKÉDEX…</span></div>}
@@ -209,14 +284,18 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, view
         {/* Selector superior de formas: las miniaturas priorizan icono y usan sprite como respaldo. */}
         {visibleForms.length > 1 && <nav className="detail-form-selector" aria-label="Formas y variantes">
           <h2 className="detail-section-title">FORMAS Y VARIANTES</h2>
-          <div className="form-options" role="group" aria-label="Seleccionar forma del Pokémon">{visibleForms.map((form) => {
+          <div className={`form-options-shell${formScroll.left || formScroll.right ? ' is-scrollable' : ''}`}>
+            <div className="form-options" ref={formOptionsRef} role="group" aria-label="Seleccionar forma del Pokémon" tabIndex={formScroll.left || formScroll.right ? 0 : undefined}>{visibleForms.map((form) => {
             const icon = latestPokemonIcon(form.data) || pokemonImage(form.data, '2d') || latestGenerationSprite(form.data)?.url;
             return <button key={form.pokemon.name} className={`form-option${activeForm?.pokemon.name === form.pokemon.name ? ' selected' : ''}`} onClick={() => setSelectedForm(form.pokemon.name)} aria-pressed={activeForm?.pokemon.name === form.pokemon.name}>
               <img loading="lazy" src={icon} alt="" /><span>{formLabel(form, species?.name || pokemon.name)}</span>
             </button>;
-          })}</div>
+            })}</div>
+            {formScroll.left && <button className="effectiveness-scroll-arrow is-left" type="button" onClick={() => formOptionsRef.current?.scrollBy({ left: -Math.max(formOptionsRef.current.clientWidth * 0.7, 100), behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })} aria-label="Mostrar formas anteriores" title="Mostrar formas anteriores"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8.5 3.5 4 8l4.5 4.5M4.5 8H12" /></svg></button>}
+            {formScroll.right && <button className="effectiveness-scroll-arrow is-right" type="button" onClick={() => formOptionsRef.current?.scrollBy({ left: Math.max(formOptionsRef.current.clientWidth * 0.7, 100), behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })} aria-label="Mostrar más formas" title="Mostrar más formas"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m7.5 3.5 4.5 4.5-4.5 4.5M11.5 8H4" /></svg></button>}
+          </div>
         </nav>}
-        {/* Zona principal: imagen 2D/3D y Shiny a la izquierda; datos descriptivos a la derecha. */}
+        {/* Zona principal: artwork, descripción y habilidades con orden adaptable a móvil. */}
         <section className="detail-hero" aria-labelledby="detail-name">
           <div className="detail-visual-column">
             <div className={`detail-page-art${viewMode === '2d' ? ' is-pixel-art' : ' is-3d-sprite'}`}>
@@ -263,7 +342,7 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, view
               </div>;
             })}</div></section>
           </div>
-          <div className="detail-overview">
+          <section className="detail-overview">
             <p className="eyebrow"><span className="eyebrow-line" /> POKÉDEX NACIONAL / {padId(dexNumber)}</p>
             <h1 id="detail-name">{species?.names?.find((entry) => entry.language.name === 'es')?.name || pokemon.name}</h1>
             {activeForm && !activeForm.is_default && <p className="detail-current-form">{formLabel(activeForm, species?.name || pokemon.name)}</p>}
@@ -297,11 +376,15 @@ export default function PokemonDetailPage({ pokemon, cachedDetail, loading, view
               const tier = value < 20 ? 'extreme-low' : value < 50 ? 'low' : value < 90 ? 'mid' : value < 150 ? 'high' : 'standout';
               return <div className={`stat-row stat-${key} stat-tier-${tier}`} key={key} role="row"><span className="stat-label"><i><StatIcon stat={key} /></i>{label}</span><strong>{value}</strong><div className="stat-track"><i style={{ width: `${Math.min(value / 255 * 100, 100)}%` }} /></div></div>;
             })}</div>
-          </div>
+          </section>
         </section>
         {/* Bloques complementarios que se mantienen bajo el panel principal en escritorio y móvil. */}
         <div className="detail-sections-grid">
-          <section className="detail-info-panel"><h2 className="detail-section-title">CADENA EVOLUTIVA</h2>{evolution ? <div className="evolution-chain-scroll"><EvolutionBranch node={evolution} selectedId={species?.id || pokemon.id} onOpen={onOpen} /></div> : <p className="detail-muted">Sin datos evolutivos disponibles.</p>}</section>
+          <section className="detail-info-panel"><h2 className="detail-section-title">CADENA EVOLUTIVA</h2>{evolution ? <div className={`evolution-chain-shell${evolutionScroll.left || evolutionScroll.right ? ' is-scrollable' : ''}`}>
+            <div className="evolution-chain-scroll" ref={evolutionChainRef} role="group" aria-label="Cadena evolutiva; desplazamiento horizontal" tabIndex={evolutionScroll.left || evolutionScroll.right ? 0 : undefined}><EvolutionBranch node={evolution} selectedId={species?.id || pokemon.id} onOpen={onOpen} /></div>
+            {evolutionScroll.left && <button className="effectiveness-scroll-arrow is-left" type="button" onClick={() => evolutionChainRef.current?.scrollBy({ left: -Math.max(evolutionChainRef.current.clientWidth * 0.7, 100), behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })} aria-label="Mostrar evoluciones anteriores" title="Mostrar evoluciones anteriores"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8.5 3.5 4 8l4.5 4.5M4.5 8H12" /></svg></button>}
+            {evolutionScroll.right && <button className="effectiveness-scroll-arrow is-right" type="button" onClick={() => evolutionChainRef.current?.scrollBy({ left: Math.max(evolutionChainRef.current.clientWidth * 0.7, 100), behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })} aria-label="Mostrar más evoluciones" title="Mostrar más evoluciones"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m7.5 3.5 4.5 4.5-4.5 4.5M11.5 8H4" /></svg></button>}
+          </div> : <p className="detail-muted">Sin datos evolutivos disponibles.</p>}</section>
           <div className="detail-analysis-grid">
             <TypeEffectiveness types={selectedData?.types || detail.types} />
             <section className="detail-info-panel moves-panel"><div className="moves-heading"><h2 className="detail-section-title">MOVIMIENTOS POR NIVEL</h2><span>{moves.length} MOV.</span></div>{moves.length ? <div className="level-moves"><table className="move-table"><thead><tr><th>NIVEL</th><th>MOVIMIENTO</th><th>TIPO</th><th>CLASE</th></tr></thead><tbody>{moves.map((move) => {

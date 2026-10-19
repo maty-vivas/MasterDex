@@ -3,6 +3,7 @@ import { createClient } from '@libsql/client';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+// Copia la caché local ya comprimida; requiere las credenciales de Turso en el entorno del proceso.
 const databasePath = resolve(process.cwd(), process.env.MASTERDEX_DB_PATH || 'data/masterdex.sqlite');
 const databaseUrl = process.env.TURSO_DATABASE_URL;
 const authToken = process.env.TURSO_AUTH_TOKEN;
@@ -19,6 +20,7 @@ const source = new DatabaseSync(databasePath, { readOnly: true });
 const target = createClient({ url: databaseUrl, authToken });
 
 async function migrate() {
+  // La tabla comparte el formato que espera la función serverless de producción.
   await target.execute(`
     CREATE TABLE IF NOT EXISTS api_cache (
       resource_path TEXT PRIMARY KEY,
@@ -31,6 +33,7 @@ async function migrate() {
   let batch = [];
   let copied = 0;
 
+  // El upsert hace que una segunda ejecución actualice datos existentes sin duplicarlos.
   for (const row of rows) {
     batch.push({
       sql: `
@@ -43,6 +46,7 @@ async function migrate() {
       args: [row.resource_path, Buffer.from(row.payload), row.cached_at],
     });
 
+    // Los lotes acotan el uso de memoria y el tamaño de cada transacción remota.
     if (batch.length >= batchSize) {
       await target.batch(batch, 'write');
       copied += batch.length;

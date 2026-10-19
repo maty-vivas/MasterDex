@@ -4,6 +4,7 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 let client;
 let schemaReady;
 
+// Reutiliza la conexión durante la vida de la instancia serverless y valida sus secretos al primer uso.
 function getClient() {
   if (client) return client;
 
@@ -20,6 +21,7 @@ function getClient() {
 /** Crea la tabla de caché una sola vez por instancia serverless. */
 export async function ensureTursoCache() {
   if (!schemaReady) {
+    // Todas las solicitudes de una instancia esperan la misma creación de tabla; un fallo permite reintentar.
     schemaReady = getClient().execute(`
       CREATE TABLE IF NOT EXISTS api_cache (
         resource_path TEXT PRIMARY KEY,

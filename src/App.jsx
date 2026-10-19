@@ -35,6 +35,11 @@ export default function App() {
     catch { /* La navegación sigue funcionando si el navegador bloquea el almacenamiento local. */ }
   }, [viewMode]);
 
+  // Mantiene el nombre corto en la pestaña al volver a la lista.
+  useEffect(() => {
+    if (routeId === null) document.title = 'MasterDex';
+  }, [routeId]);
+
   // Carga el índice nacional una vez; cambiar retryKey vuelve a ejecutar la solicitud.
   useEffect(() => {
     const controller = new AbortController();

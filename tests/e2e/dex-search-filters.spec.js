@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { installPokeApiMocks } from './helpers/pokeapi-mocks.js';
 
+// Los casos validan búsqueda y semántica de filtros con un catálogo controlado por fixtures.
 test.beforeEach(async ({ page }) => {
   await installPokeApiMocks(page);
   await page.goto('/');
